@@ -14,8 +14,8 @@ def load_signal(path: str, global_params={}) -> np.array:
 
 
 @interactive(
-    time_selection=(0., [0., 100.], "selected time [%]"), 
-    window=(0.3, [0.01, 1.], "window size [s]")
+    time_selection=(50., [0., 100.], "selected time [%]"), 
+    window=(1., [0.01, 3.], "window size [s]")
 )
 def trim_signal(
     signal,
@@ -25,7 +25,7 @@ def trim_signal(
 ):
     rate = global_params["sampling_rate"]
     full_time = np.arange(len(signal))/rate
-    full_signal = signal/(2.**14-1)
+    full_signal = signal/(2.**15-1) # assume 16bits signed
     temporal_signal_length = len(signal)/rate
     time_center  = time_selection/100.*temporal_signal_length
     time_start = max(0,time_center-window/2.)
@@ -63,16 +63,17 @@ def visualize_fourier(frequencies, fourier_coefficients, global_params={}):
         ],
         grid=True,
         xlabel="f[Hz]",
+        xlim=(0., 2000.)
     )
     return curve
 
 def compute_spectrum(x, global_params={}):
     fs = global_params["sampling_rate"]
-    X=fft(x)/fs
+    X= fft(x) / np.sqrt(len(x))
     f= fftfreq(len(x),d=1/fs)
     X_ordered = fftshift(X)
-    f_ordered=fftshift(f)
-    return f_ordered, X_ordered
+    f_ordered= fftshift(f)
+    return f_ordered, np.abs(X_ordered)**2. #* fs
 
 @interactive_pipeline(gui="mpl")
 def audio_pipeline(audio_path):
@@ -80,10 +81,12 @@ def audio_pipeline(audio_path):
     trimmed_timeline, trimmed_audio = trim_signal(full_audio_signal)
     sig_viz = visualize_signal(trimmed_timeline, trimmed_audio)
     freq, ampl = compute_spectrum(trimmed_audio)
-    ft_viz = visualize_fourier(freq, ampl)
-    return sig_viz, ft_viz
+    spectrum = visualize_fourier(freq, ampl)
+    return sig_viz, spectrum
 
 if __name__ == '__main__':
-    path="Voice.wav"
+    path="baby_maman_papa.wav"
+    # path="Voice.wav"
+    # path ="voix_Mathilde.wav"
     audio_pipeline(path)
     
