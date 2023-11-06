@@ -8,7 +8,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
 
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 from pathlib import Path
 from typing import List, Dict, Tuple, Any, Union
 import scipy
@@ -123,6 +123,7 @@ def train_classifier(
     else:
         x_train_shrink, x_test_shrink = x_train[:, :feature_dimension], x_test[:, :feature_dimension]
     accuracies = []
+    confusion_matrices = []
     
     classifiers = []
     if classifier == DECISION_TREE or classifier == RANDOM_FOREST:
@@ -138,6 +139,7 @@ def train_classifier(
             y_test_pred = dt.predict(x_test_shrink)
             acc_train, acc_test = accuracy_score(y_train, y_train_pred), accuracy_score(y_test, y_test_pred)
             accuracies.append([acc_train, acc_test])
+            confusion_matrices.append(confusion_matrix(y_test, y_test_pred))
             # if debug:
             #     print(f"accuracy training {acc_train:.1f} | accuracy test {acc_test:.1f}")
     elif classifier in [SVM, ADABOOST, XG_BOOST]:
@@ -159,6 +161,8 @@ def train_classifier(
         y_test_pred = clas.predict(x_test_shrink)
         acc_train, acc_test = accuracy_score(y_train, y_train_pred), accuracy_score(y_test, y_test_pred)
         accuracies.append([acc_train, acc_test])
+        confusion_matrices.append(confusion_matrix(y_test, y_test_pred))
+        
     else:
         raise NotImplementedError(f"Classifier {classifier} not implemented")
     accuracies = np.array(accuracies)
@@ -174,7 +178,15 @@ def train_classifier(
             plt.show()
     
     best_depth = np.argmax(accuracies[:, 1]) if forced_depth is None else forced_depth
-    return accuracies[best_depth, :], depth_list[best_depth], classifiers[best_depth]
+    return accuracies[best_depth, :], depth_list[best_depth], classifiers[best_depth], confusion_matrices[best_depth]
+
+
+def display_confusion_matrix(confusion_matrix):
+    true_negative, false_positive, false_negative, true_positive = confusion_matrix.ravel()
+    print(f"{true_negative=} non-menace samples were classified as non-menaces")
+    print(f"{false_positive=} non-menaces were classified as menaces (False alarm)")
+    print(f"{false_negative=} menaces were classified as non-menaces (problem = you're under attack and you didn't realize)")
+    print(f"{true_positive=} menaces were classified as menaces correctly (you're under attack and you have detected it)")
 
 
 # BETTER "HANDCRAFTED" FEATURE COMPUTATION
@@ -185,9 +197,8 @@ def get_better_features(df: pd.DataFrame, feature_dimension=None) -> Tuple[List,
     freq_mean = np.array([el.mean() for el in df["frequence"]])
     light_speed_c = 3.E8
     wave_length_lambda= light_speed_c/freq_mean
-    # power = np.array([((np.abs(el.mean())+1.E-16)) for el in df["puissance"]])
-    power = np.array([10.**(el.mean()/10. + 12) for el in df["puissance"]])
-    print(power.mean())
+    power = np.array([10.**(el.mean()/10.) for el in df["puissance"]])
+    # print(power.mean())
     peak_mean_width = np.array([np.mean(el[1:] - el[:-1]) for el in df["peaks_loc"]])
     peak_max_width = np.array([np.max(el[1:] - el[:-1]) for el in df["peaks_loc"]])
     peak_median_width = np.array([np.median(el[1:] - el[:-1]) for el in df["peaks_loc"]])
@@ -201,15 +212,15 @@ def get_better_features(df: pd.DataFrame, feature_dimension=None) -> Tuple[List,
         freq_feature = np.array([(1./el).std()/((1./el).mean()) for el in df["frequence"]]),
         freq_mean = freq_mean,
         freq_std = np.array([el.std() for el in df["frequence"]]),
-        min_power = np.array([el.min() for el in df["puissance"]]),
-        # power= power,
-        # distance_target  = (power/wave_length_lambda)**(1./4.),
-        
+        min_power_db = np.array([el.min() for el in df["puissance"]]),
+        power= power,
+
+        #Try to put a bit of physics in the features...
         distance_target = (power)**(-1/2.) * wave_length_lambda,
-        # distance_target_basic = (power)**(-1/2.),
+        distance_target_basic = (power)**(-1/2.),
         
         # mean_power = np.array([el.mean() for el in df["puissance"]]),
-        # std_power = np.array([el.std() for el in df["puissance"]]),
+        std_power = np.array([el.std() for el in df["puissance"]]),
         number_of_peaks = np.array([len(el) for el in df["peaks_loc"]]),
         
         # impulse_freq_sq=df.impulsion_freq**2,
