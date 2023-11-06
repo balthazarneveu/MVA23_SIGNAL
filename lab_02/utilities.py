@@ -90,16 +90,17 @@ def get_hand_crafted_features(df: pd.DataFrame, feature_dimension=None) -> Tuple
 
 
 def extract_peaks(df: pd.DataFrame, add_to_df :bool=False) -> Tuple[List, List]:
-    peaks_locations_list = []
-    peaks_values_list = []
-    for idx in range(len(df)):
-        # if df_hard.menace[idx]:
-        peaks = scipy.signal.find_peaks(df.puissance[idx])[0]
-        peaks_locations_list.append(peaks)
-        peaks_values_list.append(df.puissance[idx][peaks])
-    if add_to_df:
-        df["peaks_loc"] = peaks_locations_list
-        df["peaks_val"] = peaks_values_list
+    for under_flag, prefix in [(True, "under_"), (False, "")]:
+        peaks_locations_list = []
+        peaks_values_list = []
+        for idx in range(len(df)):
+            # if df_hard.menace[idx]:
+            peaks = scipy.signal.find_peaks((-1 if under_flag else 1.)*df.puissance[idx])[0]
+            peaks_locations_list.append(peaks)
+            peaks_values_list.append(df.puissance[idx][peaks])
+        if add_to_df:
+            df[prefix+"peaks_loc"] = peaks_locations_list
+            df[prefix+"peaks_val"] = peaks_values_list
     return peaks_locations_list, peaks_values_list
 
 
@@ -177,18 +178,24 @@ def train_classifier(
 
 
 # BETTER "HANDCRAFTED" FEATURE COMPUTATION
-def get_better_features(df: pd.DataFrame, feature_dimension=None, whiten=False) -> Tuple[List, List]:
+def get_better_features(df: pd.DataFrame, feature_dimension=None) -> Tuple[List, List]:
     # theta=np.array([np.mean(el) for el in df["theta"]]),
     # phi=np.array([np.mean(el) for el in df["phi"]]),
     # Not informative
     freq_mean = np.array([el.mean() for el in df["frequence"]])
     light_speed_c = 3.E8
     wave_length_lambda= light_speed_c/freq_mean
-    power = np.array([((np.abs(el.mean())+1.E-16)) for el in df["puissance"]])
-    # print(power.mean())
+    # power = np.array([((np.abs(el.mean())+1.E-16)) for el in df["puissance"]])
+    power = np.array([10.**(el.mean()/10. + 12) for el in df["puissance"]])
+    print(power.mean())
     peak_mean_width = np.array([np.mean(el[1:] - el[:-1]) for el in df["peaks_loc"]])
     peak_max_width = np.array([np.max(el[1:] - el[:-1]) for el in df["peaks_loc"]])
     peak_median_width = np.array([np.median(el[1:] - el[:-1]) for el in df["peaks_loc"]])
+
+    under_peak_mean_width = np.array([np.mean(el[1:] - el[:-1]) for el in df["under_peaks_loc"]])
+    under_peak_max_width = np.array([np.max(el[1:] - el[:-1]) for el in df["under_peaks_loc"]])
+    under_peak_median_width = np.array([np.median(el[1:] - el[:-1]) for el in df["under_peaks_loc"]])
+
     feature_dict = dict(
         # freq_special = np.array([el.std() for el in df["frequence"]]) / np.array([el.mean() for el in df["frequence"]]),
         freq_feature = np.array([(1./el).std()/((1./el).mean()) for el in df["frequence"]]),
@@ -197,8 +204,10 @@ def get_better_features(df: pd.DataFrame, feature_dimension=None, whiten=False) 
         min_power = np.array([el.min() for el in df["puissance"]]),
         # power= power,
         # distance_target  = (power/wave_length_lambda)**(1./4.),
+        
         distance_target = (power)**(-1/2.) * wave_length_lambda,
-        distance_target_basic = (power)**(-1/2.),
+        # distance_target_basic = (power)**(-1/2.),
+        
         # mean_power = np.array([el.mean() for el in df["puissance"]]),
         # std_power = np.array([el.std() for el in df["puissance"]]),
         number_of_peaks = np.array([len(el) for el in df["peaks_loc"]]),
@@ -208,6 +217,12 @@ def get_better_features(df: pd.DataFrame, feature_dimension=None, whiten=False) 
         peak_max_width = peak_max_width,
         peak_median_width = peak_median_width,
         peak_ratio = peak_max_width/peak_median_width,
+
+
+        under_peak_mean_width = under_peak_mean_width,
+        under_peak_max_width = under_peak_max_width,
+        under_peak_median_width = under_peak_median_width,
+
         peak_vals_std = np.array([np.std(el) for el in df["peaks_val"]]),
         impulse_freq=df.impulsion_freq,
         impulse_period=1./df.impulsion_freq,
@@ -217,11 +232,19 @@ def get_better_features(df: pd.DataFrame, feature_dimension=None, whiten=False) 
     # x = np.stack([freq_std, min_pow, peak_len, 1./impulse_freq, peak_width, peak_vals_std, peak_vals_mean], axis=1)
     x = np.stack([el for _, el in feature_dict.items()], axis=1)
     # print(np.mean(x, axis=0))
-    if whiten:
-        x = (x-np.mean(x, axis=0))/np.std(x, axis=0)
-        print(np.mean(x, axis=0), np.std(x, axis=0))
+    
     if feature_dimension is not None:
         x=x[:, :feature_dimension]
     y = [1. if el else 0. for el in df["menace"]]
     return x, y, list(feature_dict.keys())
 
+
+def estimate_whitening_coeffs(x:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    return np.mean(x, axis=0), np.std(x, axis=0)
+
+def whiten(x:np.ndarray, mean=None, stddev=None) -> np.ndarray:
+    if mean is None and stddev is None:
+        mean, stddev = estimate_whitening_coeffs(x)
+    whitened_x = (x-mean)/stddev
+    # print(np.mean(x, axis=0), np.std(x, axis=0))
+    return whitened_x, mean, stddev
