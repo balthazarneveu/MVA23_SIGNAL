@@ -25,7 +25,7 @@ import scipy
 # - l'angle theta et l'angle phi décrivant la direction dans laquelle l'impulsion est détectée (en radians)
 # - la fréquence de l'impulsion (en Ghz)
 
-def homogenize_dataset(dataset="train", data_path = Path("radars")) -> pd.DataFrame:
+def homogenize_dataset(dataset="train", data_path = Path("radars"), num_samples=100) -> pd.DataFrame:
     """This function is used to normalize and standardize a dataset.
     It converts non-uniformly sampled signals into a regular timeline
     and normalizes the values to standard units.
@@ -52,7 +52,7 @@ def homogenize_dataset(dataset="train", data_path = Path("radars")) -> pd.DataFr
         pdws = np.load(data_path/ dataset / f'pdw-{idx}.npz')
         target = dict_labels_current[f'pdw-{idx}']=="nonmenace"
         dates = pdws['date']
-        uniform_timestamps = np.linspace(0, 10.E3, 100)
+        uniform_timestamps = np.linspace(0, 10.E3, num_samples)
         new_dic = {}
         for label, scale in values_units: #normalize to standard units (Hz, seconds)
             non_uniform_value = pdws[label]
@@ -101,6 +101,7 @@ DECISION_TREE = "Decision tree"
 SVM = "SVM classifier"
 RANDOM_FOREST = "Random forest"
 ADABOOST = "Ada Boost"
+XG_BOOST = "XG Boost"
 ALL_CLASSIFIERS = [DECISION_TREE, SVM, RANDOM_FOREST, ADABOOST]
 
 def train_classifier(
@@ -132,15 +133,19 @@ def train_classifier(
             accuracies.append([acc_train, acc_test])
             # if debug:
             #     print(f"accuracy training {acc_train:.1f} | accuracy test {acc_test:.1f}")
-    elif classifier in [SVM, ADABOOST]:
+    elif classifier in [SVM, ADABOOST, XG_BOOST]:
         depth_list = [1]
         best_depth = 0
+        extra = {}
         if classifier == SVM:
-            # clas = SVC(kernel="poly", C=0.025, random_state=42)
-            clas = SVC()
+            clas = SVC(kernel="rbf", C=1.)
         elif classifier == ADABOOST:
             clas = AdaBoostClassifier(n_estimators=50)
-        clas.fit(x_train_shrink, y_train)
+        elif classifier == XG_BOOST:
+            import xgboost as xgb
+            clas = xgb.XGBClassifier(tree_method="hist", early_stopping_rounds=2, )
+            extra = {"eval_set":[(x_test_shrink, y_test)], "verbose": 0}
+        clas.fit(x_train_shrink, y_train, **extra)
         classifiers.append(clas)
         y_train_pred = clas.predict(x_train_shrink)
         y_test_pred = clas.predict(x_test_shrink)
@@ -166,17 +171,22 @@ def train_classifier(
 
 # "HANDCRAFTED" FEATURE COMPUTATION
 def get_better_features(df: pd.DataFrame, feature_dimension=None) -> Tuple[List, List]:
-    freq_std = np.array([el.std() for el in df["frequence"]])
-    min_pow = np.array([el.min() for el in df["puissance"]])
-    peak_len = np.array([len(el) for el in df["peaks_loc"]])
-    peak_width = np.array([np.mean(el[1:] - el[:-1]) for el in df["peaks_loc"]])
-    peak_vals_std = np.array([np.std(el) for el in df["peaks_val"]])
-    peak_vals_mean = np.array([np.mean(el) for el in df["peaks_val"]])
+    feature_dict = dict(
+        freq_std = np.array([el.std() for el in df["frequence"]]),
+        min_power = np.array([el.min() for el in df["puissance"]]),
+        peak_length = np.array([len(el) for el in df["peaks_loc"]]),
+        peak_mean_width = np.array([np.mean(el[1:] - el[:-1]) for el in df["peaks_loc"]]),
+        peak_max_width = np.array([np.max(el[1:] - el[:-1]) for el in df["peaks_loc"]]),
+        peak_median_width = np.array([np.median(el[1:] - el[:-1]) for el in df["peaks_loc"]]),
+        peak_vals_std = np.array([np.std(el) for el in df["peaks_val"]]),
+        impulse_freq=df.impulsion_freq,
+        peak_vals_mean = np.array([np.mean(el) for el in df["peaks_val"]]),
+    )
     # ts_multiples = np.array([np.quantile(el, 0.9) for el in df["timestamps_interval_multiples"]])
-    impulse_freq  = df.impulsion_freq
-    x = np.stack([freq_std, min_pow, peak_len, 1./impulse_freq, peak_width, peak_vals_std, peak_vals_mean], axis=1)
+    # x = np.stack([freq_std, min_pow, peak_len, 1./impulse_freq, peak_width, peak_vals_std, peak_vals_mean], axis=1)
+    x = np.stack([el for key, el in feature_dict.items()], axis=1)
     if feature_dimension is not None:
         x=x[:, :feature_dimension]
     y = [1. if el else 0. for el in df["menace"]]
-    return x, y
+    return x, y, list(feature_dict.keys())
 
