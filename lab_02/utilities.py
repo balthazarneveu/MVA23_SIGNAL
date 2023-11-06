@@ -208,20 +208,21 @@ def get_better_features(df: pd.DataFrame, feature_dimension=None) -> Tuple[List,
     under_peak_median_width = np.array([np.median(el[1:] - el[:-1]) for el in df["under_peaks_loc"]])
 
     feature_dict = dict(
-        # freq_special = np.array([el.std() for el in df["frequence"]]) / np.array([el.mean() for el in df["frequence"]]),
         freq_feature = np.array([(1./el).std()/((1./el).mean()) for el in df["frequence"]]),
         freq_mean = freq_mean,
-        freq_std = np.array([el.std() for el in df["frequence"]]),
         min_power_db = np.array([el.min() for el in df["puissance"]]),
-        power= power,
-
+        number_of_peaks = np.array([len(el) for el in df["peaks_loc"]]),
+        
+        freq_std = np.array([el.std() for el in df["frequence"]]),
         #Try to put a bit of physics in the features...
+        power= power,
         distance_target = (power)**(-1/2.) * wave_length_lambda,
         distance_target_basic = (power)**(-1/2.),
         
         # mean_power = np.array([el.mean() for el in df["puissance"]]),
         std_power = np.array([el.std() for el in df["puissance"]]),
-        number_of_peaks = np.array([len(el) for el in df["peaks_loc"]]),
+
+        
         
         # impulse_freq_sq=df.impulsion_freq**2,
         peak_mean_width = peak_mean_width,
@@ -242,7 +243,6 @@ def get_better_features(df: pd.DataFrame, feature_dimension=None) -> Tuple[List,
     # ts_multiples = np.array([np.quantile(el, 0.9) for el in df["timestamps_interval_multiples"]])
     # x = np.stack([freq_std, min_pow, peak_len, 1./impulse_freq, peak_width, peak_vals_std, peak_vals_mean], axis=1)
     x = np.stack([el for _, el in feature_dict.items()], axis=1)
-    # print(np.mean(x, axis=0))
     
     if feature_dimension is not None:
         x=x[:, :feature_dimension]
@@ -294,7 +294,7 @@ def final_classification_plots(
             feature_dimensions.append(feature_dimension)
             confusion_matrices.append(confusion_matrix)
         plt.plot(feature_dimensions, 100.*np.array(best_accuracies)[:, 0], color+"--", alpha=0.1) #label=f"{classifier_type} accuracy training")
-        plt.plot(feature_dimensions, 100.*np.array(best_accuracies)[:, 1], color+"-") #label=f"{classifier_type} accuracy validation")
+        plt.plot(feature_dimensions, 100.*np.array(best_accuracies)[:, 1], color+"-+") #label=f"{classifier_type} accuracy validation")
         best_index = np.argmax(np.array(best_accuracies)[:, 1])
         best_accuracy = best_accuracies[best_index][1]
         best_confusion_matrix = confusion_matrices[best_index]
@@ -313,7 +313,7 @@ def final_classification_plots(
     plt.xticks(scanned_feature_dimension, new_labels, rotation=80)
     plt.xlabel("Number of features")
     plt.ylabel(r"Accuracy (%)")
-    plt.ylim(70, 100)
+    plt.ylim(70, 90)
     plt.grid()
     plt.show()
 
