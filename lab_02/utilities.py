@@ -259,3 +259,62 @@ def whiten(x:np.ndarray, mean=None, stddev=None) -> np.ndarray:
     whitened_x = (x-mean)/stddev
     # print(np.mean(x, axis=0), np.std(x, axis=0))
     return whitened_x, mean, stddev
+
+
+
+def final_classification_plots(
+    df_training, df_testing,
+    whiten_flag=False,
+    classifiers_list = [XG_BOOST,  DECISION_TREE, RANDOM_FOREST, ADABOOST, SVM]
+    ):
+    x_train, y_train, labels_features = get_better_features(df_training)
+    x_test, y_test, _ = get_better_features(df_testing)
+    if whiten_flag:
+        x_train, mean, stddev = whiten(x_train)
+        x_test, _, _ = whiten(x_test, mean=mean, stddev=stddev)
+
+    COLOR_LIST = "rgbckyp"
+    best_accuracies_overall = []
+    best_feature_dimensions = []
+    best_confusion_matrix_overall = []
+    # classifiers_list = ALL_CLASSIFIERS #[DECISION_TREE, RANDOM_FOREST, SVM, ADABOOST]
+    # classifiers_list = [SVM]
+    
+    scanned_feature_dimension = list(range(1, len(labels_features)+1))
+    plt.figure(figsize=(10, 10))
+    for classifier_index, classifier_type in enumerate(classifiers_list):
+        best_accuracies = []
+        feature_dimensions = []
+        confusion_matrices = []
+        color = COLOR_LIST[classifier_index%len(COLOR_LIST)]
+        for feature_dimension in scanned_feature_dimension:
+            accuracies, best_depth, _, confusion_matrix = train_classifier(x_train, x_test, y_train, y_test, feature_dimension=feature_dimension, debug=False,  show=False, classifier=classifier_type)
+            # print(f"#features={feature_dimension} Tree depth={best_depth} accuracy training {accuracies[0]*100:.1f}% | accuracy test {accuracies[1]*100:.1f}%")
+            best_accuracies.append(accuracies)
+            feature_dimensions.append(feature_dimension)
+            confusion_matrices.append(confusion_matrix)
+        plt.plot(feature_dimensions, 100.*np.array(best_accuracies)[:, 0], color+"--", alpha=0.1) #label=f"{classifier_type} accuracy training")
+        plt.plot(feature_dimensions, 100.*np.array(best_accuracies)[:, 1], color+"-") #label=f"{classifier_type} accuracy validation")
+        best_index = np.argmax(np.array(best_accuracies)[:, 1])
+        best_accuracy = best_accuracies[best_index][1]
+        best_confusion_matrix = confusion_matrices[best_index]
+        best_feature_dimension = feature_dimensions[best_index]
+        plt.plot(feature_dimensions[best_index], 100.*best_accuracy, color+"o", label=f"{classifier_type} Accuracy {100*best_accuracy:.1f}% - {best_feature_dimension} features")
+        plt.legend()
+        best_accuracies_overall.append(best_accuracy)
+        best_feature_dimensions.append(best_feature_dimension)
+        best_confusion_matrix_overall.append(best_confusion_matrix)
+    best_classifier_index = np.argmax(np.array(best_accuracies_overall))
+    plt.title(f"Best accuracy {100*best_accuracies_overall[best_classifier_index]:.1f} %\n"+ 
+            f" obtained with {classifiers_list[best_classifier_index]}" +
+            f" on {best_feature_dimensions[best_classifier_index]} features")
+    new_labels = labels_features[:len(scanned_feature_dimension)]
+    new_labels = [f"{label}\n{feature}" for label, feature in zip(new_labels, scanned_feature_dimension)]
+    plt.xticks(scanned_feature_dimension, new_labels, rotation=80)
+    plt.xlabel("Number of features")
+    plt.ylabel(r"Accuracy (%)")
+    plt.ylim(70, 100)
+    plt.grid()
+    plt.show()
+
+    display_confusion_matrix(best_confusion_matrix_overall[best_classifier_index])
