@@ -138,7 +138,8 @@ def train_classifier(
         best_depth = 0
         extra = {}
         if classifier == SVM:
-            clas = SVC(kernel="rbf", C=1.)
+            # clas = SVC(kernel="rbf", C=1.)
+            clas = SVC(kernel="poly", degree=5, C=1.)
         elif classifier == ADABOOST:
             clas = AdaBoostClassifier(n_estimators=50)
         elif classifier == XG_BOOST:
@@ -170,23 +171,30 @@ def train_classifier(
 
 
 # BETTER "HANDCRAFTED" FEATURE COMPUTATION
-def get_better_features(df: pd.DataFrame, feature_dimension=None) -> Tuple[List, List]:
+def get_better_features(df: pd.DataFrame, feature_dimension=None, whiten=False) -> Tuple[List, List]:
     feature_dict = dict(
         # freq_special = np.array([el.std() for el in df["frequence"]]) / np.array([el.mean() for el in df["frequence"]]),
+        freq_feature = np.array([(1./el).std()/((1./el).mean()) for el in df["frequence"]]),
         freq_mean = np.array([el.mean() for el in df["frequence"]]),
         freq_std = np.array([el.std() for el in df["frequence"]]),
         min_power = np.array([el.min() for el in df["puissance"]]),
-        peak_length = np.array([len(el) for el in df["peaks_loc"]]),
+        number_of_peaks = np.array([len(el) for el in df["peaks_loc"]]),
+        # impulse_freq_sq=df.impulsion_freq**2,
         peak_mean_width = np.array([np.mean(el[1:] - el[:-1]) for el in df["peaks_loc"]]),
         peak_max_width = np.array([np.max(el[1:] - el[:-1]) for el in df["peaks_loc"]]),
         peak_median_width = np.array([np.median(el[1:] - el[:-1]) for el in df["peaks_loc"]]),
         peak_vals_std = np.array([np.std(el) for el in df["peaks_val"]]),
         impulse_freq=df.impulsion_freq,
+        impulse_period=1./df.impulsion_freq,
         peak_vals_mean = np.array([np.mean(el) for el in df["peaks_val"]]),
     )
     # ts_multiples = np.array([np.quantile(el, 0.9) for el in df["timestamps_interval_multiples"]])
     # x = np.stack([freq_std, min_pow, peak_len, 1./impulse_freq, peak_width, peak_vals_std, peak_vals_mean], axis=1)
-    x = np.stack([el for key, el in feature_dict.items()], axis=1)
+    x = np.stack([el for _, el in feature_dict.items()], axis=1)
+    # print(np.mean(x, axis=0))
+    if whiten:
+        x = (x-np.mean(x, axis=0))/np.std(x, axis=0)
+        print(np.mean(x, axis=0), np.std(x, axis=0))
     if feature_dimension is not None:
         x=x[:, :feature_dimension]
     y = [1. if el else 0. for el in df["menace"]]
