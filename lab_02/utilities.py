@@ -182,9 +182,10 @@ def get_better_features(df: pd.DataFrame, feature_dimension=None, whiten=False) 
     # phi=np.array([np.mean(el) for el in df["phi"]]),
     # Not informative
     freq_mean = np.array([el.mean() for el in df["frequence"]])
-    ligth_speed_c = 3.E8
-    wave_length_lambda= ligth_speed_c/freq_mean
+    light_speed_c = 3.E8
+    wave_length_lambda= light_speed_c/freq_mean
     power = np.array([((np.abs(el.mean())+1.E-16)) for el in df["puissance"]])
+    # print(power.mean())
     peak_mean_width = np.array([np.mean(el[1:] - el[:-1]) for el in df["peaks_loc"]])
     peak_max_width = np.array([np.max(el[1:] - el[:-1]) for el in df["peaks_loc"]])
     peak_median_width = np.array([np.median(el[1:] - el[:-1]) for el in df["peaks_loc"]])
@@ -196,8 +197,8 @@ def get_better_features(df: pd.DataFrame, feature_dimension=None, whiten=False) 
         min_power = np.array([el.min() for el in df["puissance"]]),
         # power= power,
         # distance_target  = (power/wave_length_lambda)**(1./4.),
-        distance_target = (power)**(-1/4.) * wave_length_lambda**2,
-        # mean_power = np.array([((np.abs(el.mean())+1.E-12)**(1./4.)) for el in df["puissance"]]),
+        distance_target = (power)**(-1/2.) * wave_length_lambda,
+        distance_target_basic = (power)**(-1/2.),
         # mean_power = np.array([el.mean() for el in df["puissance"]]),
         # std_power = np.array([el.std() for el in df["puissance"]]),
         number_of_peaks = np.array([len(el) for el in df["peaks_loc"]]),
