@@ -172,17 +172,35 @@ def train_classifier(
 
 # BETTER "HANDCRAFTED" FEATURE COMPUTATION
 def get_better_features(df: pd.DataFrame, feature_dimension=None, whiten=False) -> Tuple[List, List]:
+    # theta=np.array([np.mean(el) for el in df["theta"]]),
+    # phi=np.array([np.mean(el) for el in df["phi"]]),
+    # Not informative
+    freq_mean = np.array([el.mean() for el in df["frequence"]])
+    ligth_speed_c = 3.E8
+    wave_length_lambda= ligth_speed_c/freq_mean
+    power = np.array([((np.abs(el.mean())+1.E-16)) for el in df["puissance"]])
+    peak_mean_width = np.array([np.mean(el[1:] - el[:-1]) for el in df["peaks_loc"]])
+    peak_max_width = np.array([np.max(el[1:] - el[:-1]) for el in df["peaks_loc"]])
+    peak_median_width = np.array([np.median(el[1:] - el[:-1]) for el in df["peaks_loc"]])
     feature_dict = dict(
         # freq_special = np.array([el.std() for el in df["frequence"]]) / np.array([el.mean() for el in df["frequence"]]),
         freq_feature = np.array([(1./el).std()/((1./el).mean()) for el in df["frequence"]]),
-        freq_mean = np.array([el.mean() for el in df["frequence"]]),
+        freq_mean = freq_mean,
         freq_std = np.array([el.std() for el in df["frequence"]]),
         min_power = np.array([el.min() for el in df["puissance"]]),
+        # power= power,
+        # distance_target  = (power/wave_length_lambda)**(1./4.),
+        distance_target = (power)**(-1/4.) * wave_length_lambda**2,
+        # mean_power = np.array([((np.abs(el.mean())+1.E-12)**(1./4.)) for el in df["puissance"]]),
+        # mean_power = np.array([el.mean() for el in df["puissance"]]),
+        # std_power = np.array([el.std() for el in df["puissance"]]),
         number_of_peaks = np.array([len(el) for el in df["peaks_loc"]]),
+        
         # impulse_freq_sq=df.impulsion_freq**2,
-        peak_mean_width = np.array([np.mean(el[1:] - el[:-1]) for el in df["peaks_loc"]]),
-        peak_max_width = np.array([np.max(el[1:] - el[:-1]) for el in df["peaks_loc"]]),
-        peak_median_width = np.array([np.median(el[1:] - el[:-1]) for el in df["peaks_loc"]]),
+        peak_mean_width = peak_mean_width,
+        peak_max_width = peak_max_width,
+        peak_median_width = peak_median_width,
+        peak_ratio = peak_max_width/peak_median_width,
         peak_vals_std = np.array([np.std(el) for el in df["peaks_val"]]),
         impulse_freq=df.impulsion_freq,
         impulse_period=1./df.impulsion_freq,
