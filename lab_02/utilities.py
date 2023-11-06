@@ -35,6 +35,12 @@ def homogenize_dataset(dataset="train", data_path = Path("radars"), num_samples=
     Parameters:
     dataset (str): The dataset to be homogenized. Default is "train".
     data_path (Path): The path to the directory containing the dataset. Default is "radars".
+    num_samples (int): The number of samples to be used for the regular timeline. Default is 100. 
+    
+    Note on num_samples:
+    Downsampling may introduce some aliasing... which may not be optimal for peaks detection.
+    Empirically, it simplified the tuning of the peak detector
+    A correct signal denoiser like a bilateral filter could be a better solution.
 
     Returns:
     DataFrame: A pandas DataFrame containing the homogenized dataset.
