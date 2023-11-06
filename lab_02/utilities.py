@@ -169,9 +169,11 @@ def train_classifier(
     return accuracies[best_depth, :], depth_list[best_depth], classifiers[best_depth]
 
 
-# "HANDCRAFTED" FEATURE COMPUTATION
+# BETTER "HANDCRAFTED" FEATURE COMPUTATION
 def get_better_features(df: pd.DataFrame, feature_dimension=None) -> Tuple[List, List]:
     feature_dict = dict(
+        # freq_special = np.array([el.std() for el in df["frequence"]]) / np.array([el.mean() for el in df["frequence"]]),
+        freq_mean = np.array([el.mean() for el in df["frequence"]]),
         freq_std = np.array([el.std() for el in df["frequence"]]),
         min_power = np.array([el.min() for el in df["puissance"]]),
         peak_length = np.array([len(el) for el in df["peaks_loc"]]),
