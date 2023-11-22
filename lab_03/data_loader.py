@@ -56,4 +56,3 @@ def get_labels(data_dict: dict) -> Dict[int, str]:
         data_dict['label_name'].attrs[k]: k
         for k in data_dict['label_name'].attrs.keys()
     }
-
