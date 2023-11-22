@@ -13,7 +13,7 @@ VALID = "validation"
 PATH = "path"
 BATCH_SIZE = "batch_size"
 DEFAULT_BATCH_SIZE = 8
-CONFIG_DATAPATHS = {
+CONFIG_DATALOADER = {
     TRAIN: {
         PATH: DATA_ROOT/"train.hdf5",
         BATCH_SIZE: DEFAULT_BATCH_SIZE
@@ -101,14 +101,14 @@ class SignalsDataset(Dataset):
         return signal, label
 
 
-def get_dataloaders(config_data_paths: dict = CONFIG_DATAPATHS,
+def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
                     ) -> Dict[str, DataLoader]:
     """Instantiates train and valid dataloaders
 
     Args:
         config_data_paths (dict, optional): Configuration for train/valid
         containing paths & batch size.
-        Defaults to CONFIG_DATAPATHS.
+        Defaults to CONFIG_DATALOADER.
 
     Returns:
         Dict[str, DataLoader]: A dictionary withs dataloaders
