@@ -20,6 +20,7 @@ def train(model: torch.nn.Module,
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     training_losses = []
     valid_losses = []
+    valid_accuracies = []
     # Loop over epochs
     for epoch in range(n_epochs):
         training_losses_epoch = []
@@ -46,17 +47,26 @@ def train(model: torch.nn.Module,
         # Evaluate accuracy on the validation set
         model.eval()
         valid_loss = []
+        correct_detection = []
         for signal, labels in dataloaders[VALID]:
             with torch.no_grad():
                 signal = signal.to(device)
                 labels = labels.to(device)
                 prediction = model(signal)
+                proba = torch.nn.Softmax()(prediction)
+                class_prediction = torch.argmax(proba, axis=1)
+                # print(class_prediction.shape, labels.shape)
+                correct_predictions = (class_prediction == labels[:, 0]).detach().cpu()
+                correct_detection.extend(correct_predictions)
+                # print(correct_detection)
                 valid_loss_batched = criterion(prediction, labels[:, 0])
             valid_loss.append(valid_loss_batched.cpu())
+        accuracy = np.array(correct_detection).mean()
+        valid_accuracies.append(accuracy)
         valid_loss = np.array(valid_loss).mean()
         valid_losses.append(valid_loss)
-        print(f"{epoch=} | {training_loss=:.3f} | {valid_loss=:.3}")
-    return model, training_losses, valid_losses
+        print(f"{epoch=} | {training_loss=:.3f} | {valid_loss=:.3} | {accuracy:%}")
+    return model, training_losses, valid_losses, valid_accuracies
 
 
 if __name__ == "__main__":
