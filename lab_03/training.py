@@ -65,7 +65,7 @@ def train(model: torch.nn.Module,
         valid_accuracies.append(accuracy)
         valid_loss = np.array(valid_loss).mean()
         valid_losses.append(valid_loss)
-        print(f"{epoch=} | {training_loss=:.3f} | {valid_loss=:.3} | {accuracy:%}")
+        print(f"{epoch=} | {training_loss=:.3f} | {valid_loss=:.3} | {accuracy:.2%}")
     return model, training_losses, valid_losses, valid_accuracies
 
 
