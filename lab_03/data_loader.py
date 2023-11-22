@@ -78,6 +78,15 @@ def get_labels(data_dict: dict) -> Dict[int, str]:
 
 
 class SignalsDataset(Dataset):
+    """Extract training/valid data from a .hdf5 file
+    Prepares batches of tensors of size [N, C, L]
+    N = batch size
+    C = number of channels, here C=2 for real and imaginary parts
+    (similar to C=3 colors in colored RGB images for instance)
+    L = length of the signal
+    (similar to [H,W] for images)
+    """
+
     def __init__(self, data_path: Path):
         signals, _snr, labels_id, _label_dict = get_data(data_path)
         self.signals = signals
@@ -92,8 +101,19 @@ class SignalsDataset(Dataset):
         return signal, label
 
 
-def get_dataloaders(config_data_paths=CONFIG_DATAPATHS
+def get_dataloaders(config_data_paths: dict = CONFIG_DATAPATHS,
                     ) -> Dict[str, DataLoader]:
+    """Instantiates train and valid dataloaders
+
+    Args:
+        config_data_paths (dict, optional): Configuration for train/valid
+        containing paths & batch size.
+        Defaults to CONFIG_DATAPATHS.
+
+    Returns:
+        Dict[str, DataLoader]: A dictionary withs dataloaders
+        for training and validation.
+    """
     dl_dict = {}
     for mode, config_dict in config_data_paths.items():
         dataset = SignalsDataset(config_dict[PATH])
