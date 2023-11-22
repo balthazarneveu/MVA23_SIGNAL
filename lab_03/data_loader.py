@@ -12,15 +12,19 @@ TRAIN = "train"
 VALID = "validation"
 PATH = "path"
 BATCH_SIZE = "batch_size"
+SHUFFLE = "shuffle"
+
 DEFAULT_BATCH_SIZE = 8
 CONFIG_DATALOADER = {
     TRAIN: {
         PATH: DATA_ROOT/"train.hdf5",
-        BATCH_SIZE: DEFAULT_BATCH_SIZE
+        BATCH_SIZE: DEFAULT_BATCH_SIZE,
+        SHUFFLE: True
     },
     VALID: {
         PATH: DATA_ROOT/"validation.hdf5",
-        BATCH_SIZE: DEFAULT_BATCH_SIZE
+        BATCH_SIZE: DEFAULT_BATCH_SIZE,
+        SHUFFLE: False
     }
 }
 
@@ -117,7 +121,7 @@ def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
     dl_dict = {}
     for mode, config_dict in config_data_paths.items():
         dataset = SignalsDataset(config_dict[PATH])
-        dl = DataLoader(dataset, shuffle=False,
+        dl = DataLoader(dataset, shuffle=config_dict[SHUFFLE],
                         batch_size=config_dict[BATCH_SIZE])
         dl_dict[mode] = dl
     return dl_dict
