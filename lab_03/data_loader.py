@@ -87,7 +87,7 @@ class SignalsDataset(Dataset):
         return self.signals.shape[0]
 
     def __getitem__(self, idx: int):
-        signal = torch.FloatTensor(self.signals[idx, :])
+        signal = torch.FloatTensor(self.signals[idx, :].T)
         label = torch.LongTensor([self.labels[idx]])
         return signal, label
 
