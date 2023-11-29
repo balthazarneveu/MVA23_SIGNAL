@@ -114,4 +114,9 @@ def get_experience(exp):
         model = Exp_baseline(pool_temporal=8)  # 49%
     elif exp == 2:
         model = Exp_baseline(pool_temporal=4)
+        hyperparams = dict(
+            lr=1E-4,
+            n_epochs=300,
+            batch_sizes=(256, 128)
+        )
     return model, hyperparams
