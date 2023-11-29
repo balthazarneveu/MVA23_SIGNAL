@@ -1,9 +1,9 @@
 import torch
-try:
-    from IPython import get_ipython
-    from tqdm.notebook import tqdm
-except Exception as exc:
-    from tqdm import tqdm
+# try:
+#     from IPython import get_ipython
+#     from tqdm.notebook import tqdm
+# except Exception as exc:
+from tqdm import tqdm
 from data_loader import TRAIN, VALID, BATCH_SIZE, get_dataloaders, CONFIG_DATALOADER
 import numpy as np
 from typing import Tuple, Optional
@@ -87,7 +87,7 @@ def train(model: torch.nn.Module,
         valid_losses=valid_losses,
         valid_accuracies=valid_accuracies
     )
-    
+
     Dump.save_pickle(metrics_dict, out_dir/"metrics.pkl")
     return model, metrics_dict
 
