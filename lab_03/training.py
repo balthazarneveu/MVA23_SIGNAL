@@ -1,16 +1,27 @@
 import torch
-from tqdm import tqdm
+try:
+    from IPython import get_ipython
+    from tqdm.notebook import tqdm
+except Exception as exc:
+    from tqdm import tqdm
 from data_loader import TRAIN, VALID, BATCH_SIZE, get_dataloaders, CONFIG_DATALOADER
 import numpy as np
 from typing import Tuple, Optional
+from dump import Dump
+from pathlib import Path
+
+ROOT_DIR = Path("__dump")
 
 
 def train(model: torch.nn.Module,
           config_dataloader=CONFIG_DATALOADER,
           device: str = "cuda",
           lr: float = 1E-4, n_epochs=5,
-          batch_sizes: Optional[Tuple[int, int]] = None
-    ):
+          batch_sizes: Optional[Tuple[int, int]] = None,
+          out_dir: Path = None
+          ):
+    if out_dir is not None:
+        out_dir.mkdir(exist_ok=True, parents=True)
     model = model.to(device)
     config = CONFIG_DATALOADER
     if batch_sizes is not None:
@@ -56,7 +67,8 @@ def train(model: torch.nn.Module,
                 proba = torch.nn.Softmax()(prediction)
                 class_prediction = torch.argmax(proba, axis=1)
                 # print(class_prediction.shape, labels.shape)
-                correct_predictions = (class_prediction == labels[:, 0]).detach().cpu()
+                correct_predictions = (
+                    class_prediction == labels[:, 0]).detach().cpu()
                 correct_detection.extend(correct_predictions)
                 # print(correct_detection)
                 valid_loss_batched = criterion(prediction, labels[:, 0])
@@ -66,10 +78,29 @@ def train(model: torch.nn.Module,
         valid_loss = np.array(valid_loss).mean()
         valid_losses.append(valid_loss)
         print(f"{epoch=} | {training_loss=:.3f} | {valid_loss=:.3} | {accuracy:.2%}")
-    return model, training_losses, valid_losses, valid_accuracies
+    metrics_dict = dict(
+        training_losses=training_losses,
+        valid_losses=valid_losses,
+        valid_accuracies=valid_accuracies
+    )
+    Dump.save_pickle(metrics_dict, out_dir/"metrics.pkl")
+    return model, metrics_dict
 
 
 if __name__ == "__main__":
-    from model import VanillaClassifier
-    model = VanillaClassifier()
-    model, training_losses, valid_losses = train(model, batch_sizes=(256, 128))
+    import argparse
+    # from argparse import ArgumentParser
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-e",  "--exp", type=int, default=0)
+    parser.add_argument("-n",  "--n-epochs", type=int, required=False)
+    args = parser.parse_args()
+    exp = args.exp
+    from model import get_experience
+    model, hyperparams = get_experience(exp)
+    if args.n_epochs is not None:
+        hyperparams["n_epochs"] = args.n_epochs
+    model, metrics_dict = train(
+        model,
+        out_dir=ROOT_DIR/f"exp_{args.exp:04d}",
+        **hyperparams,
+    )
