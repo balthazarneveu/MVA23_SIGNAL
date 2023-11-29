@@ -32,6 +32,7 @@ def train(model: torch.nn.Module,
     training_losses = []
     valid_losses = []
     valid_accuracies = []
+    valid_loss_previous = 10000000000.
     # Loop over epochs
     for epoch in range(n_epochs):
         training_losses_epoch = []
@@ -78,11 +79,15 @@ def train(model: torch.nn.Module,
         valid_loss = np.array(valid_loss).mean()
         valid_losses.append(valid_loss)
         print(f"{epoch=} | {training_loss=:.3f} | {valid_loss=:.3} | {accuracy:.2%}")
+        if valid_loss <= valid_loss_previous:
+            torch.save(model, out_dir/"best_model.pth")
+            valid_loss_previous = valid_loss
     metrics_dict = dict(
         training_losses=training_losses,
         valid_losses=valid_losses,
         valid_accuracies=valid_accuracies
     )
+    
     Dump.save_pickle(metrics_dict, out_dir/"metrics.pkl")
     return model, metrics_dict
 
