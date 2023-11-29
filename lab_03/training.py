@@ -10,7 +10,7 @@ from typing import Tuple, Optional
 from dump import Dump
 from pathlib import Path
 
-ROOT_DIR = Path("__dump")
+ROOT_DIR = Path(__file__).parent/"__dump"
 
 
 def train(model: torch.nn.Module,
@@ -23,7 +23,7 @@ def train(model: torch.nn.Module,
     if out_dir is not None:
         out_dir.mkdir(exist_ok=True, parents=True)
     model = model.to(device)
-    config = CONFIG_DATALOADER
+    config = config_dataloader
     if batch_sizes is not None:
         config[TRAIN][BATCH_SIZE], config[VALID][BATCH_SIZE] = batch_sizes
     dataloaders = get_dataloaders()
