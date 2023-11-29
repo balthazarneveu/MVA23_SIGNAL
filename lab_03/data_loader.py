@@ -126,6 +126,17 @@ def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
         dl_dict[mode] = dl
     return dl_dict
 
+def preprocessing(data_path: Path) :
+    signals, snr, labels_id, label_dict = get_data(data_path)
+    signals_rot = []
+    for signal in signals : #(T, C)
+        cov_xy = np.cov(signal.T) # (2, 2)
+        lambdas, eigenvectors = np.linalg.eig(cov_xy) 
+        signal_rot = np.zeros_like(signal.T) # (C, T)
+        for i in range(signal.shape[0]) :
+            signal_rot[:, i] = eigenvectors.T @ signal.T[:, i]
+        signals_rot.append(np.copy(signal_rot.T))
+    return np.array(signals_rot), snr, labels_id, label_dict
 
 if __name__ == '__main__':
     dl_dict = get_dataloaders()
