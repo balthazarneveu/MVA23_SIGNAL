@@ -17,6 +17,7 @@ SHUFFLE = "shuffle"
 AUGMENT_TRIM = "augment_trim"
 AUGMENT_NOISE = "augment_noise"
 AUGMENT_ROTATE = "augment_rotate"
+SNR_FILTER = "snr_filter"
 
 DEFAULT_BATCH_SIZE = 8
 CONFIG_DATALOADER = {
@@ -27,6 +28,7 @@ CONFIG_DATALOADER = {
         AUGMENT_TRIM: False,  # These can be modified
         AUGMENT_NOISE: 0,
         AUGMENT_ROTATE: False,
+        SNR_FILTER: None,
     },
     VALID: {
         PATH: DATA_ROOT/"validation.hdf5",
@@ -35,6 +37,7 @@ CONFIG_DATALOADER = {
         AUGMENT_TRIM: False,
         AUGMENT_NOISE: 0,
         AUGMENT_ROTATE: False,
+        SNR_FILTER: None
     }
 }
 
@@ -109,6 +112,7 @@ class SignalsDataset(Dataset):
         augment_noise: Optional[bool] = 0,
         augment_rotate: Optional[bool] = False,
         debug_augmentation_plot: Optional[bool] = False,
+        snr_filter: Optional[float] = None
     ):
         if augment_trim:
             logging.warning("ENABLED AUGMENTATION: Trim")
@@ -119,7 +123,13 @@ class SignalsDataset(Dataset):
         if augment_rotate:
             logging.warning("ENABLED AUGMENTATION: Rotate")
         self.augment_rotate = augment_rotate
-        signals, _snr, labels_id, _label_dict = get_data(data_path)
+        signals, snr, labels_id, _label_dict = get_data(data_path)
+        if snr_filter is not None:
+            for snr_filt in snr_filter:
+                signals = signals[snr == snr_filt]
+                labels_id = labels_id[snr == snr_filt]
+                snr = snr[snr == snr_filt]
+
         self.signals = signals
         self.labels = labels_id
         self.debug_augmentation_plot = debug_augmentation_plot
@@ -162,7 +172,7 @@ class SignalsDataset(Dataset):
             # signal = torch.bmm(rot, signal.T.unsqueeze(-1)).squeeze(-1).T
         if self.augment_noise:
             # AWGN (additive white gaussian noise)
-            # with a standard deviation sampled 
+            # with a standard deviation sampled
             # uniformly from [0, augment_noise]
             # Each signal has a different noise level
             std_dev = torch.rand(1)*self.augment_noise
@@ -247,7 +257,9 @@ def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
             config_dict[PATH],
             augment_trim=config_dict.get(AUGMENT_TRIM, False),
             augment_noise=config_dict.get(AUGMENT_NOISE, 0),
-            augment_rotate=config_dict.get(AUGMENT_ROTATE, False),)
+            augment_rotate=config_dict.get(AUGMENT_ROTATE, False),
+            snr_filter=config_dict.get(SNR_FILTER, None)
+        )
         dl = DataLoader(
             dataset,
             shuffle=config_dict[SHUFFLE],
@@ -260,6 +272,8 @@ def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
 
 
 if __name__ == '__main__':
+    config_data_paths = CONFIG_DATALOADER
+    config_data_paths[TRAIN][SNR_FILTER] = [10, 20, 30]  # Select some SNR
     dl_dict = get_dataloaders()
     print(len(dl_dict[TRAIN].dataset))
     batch_signal, batch_labels = next(iter(dl_dict[TRAIN]))
