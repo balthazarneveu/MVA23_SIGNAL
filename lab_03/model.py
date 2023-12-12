@@ -247,14 +247,14 @@ class Big_Convolutional(torch.nn.Module):
             self.relu,
             self.pool
         )
-        conv_length_output = 2048//4//4//4
+        conv_length_output = 2048//4//4//2
         self.conv1_1 = torch.nn.Conv1d(
-            h_dim, h_dim, kernel_size = 1)
+            h_dim, h_dim, kernel_size = 1, padding = 0)
         self.relu = torch.nn.ReLU()
         self.conv1_2 = torch.nn.Conv1d(
-            h_dim, h_dim, kernel_size = 1)
+            h_dim, h_dim, kernel_size = 1, padding = 0)
         self.conv1_3 = torch.nn.Conv1d(
-            h_dim, h_dim, kernel_size = 1)
+            h_dim, h_dim, kernel_size = 1, padding = 0)
         self.final_maxpool = torch.nn.MaxPool1d(conv_length_output)
         self.feature_for_classif = torch.nn.Sequential(
             self.conv1_1,
@@ -285,9 +285,11 @@ class Big_Convolutional(torch.nn.Module):
         # Convolution backbone
         # [N, C, T] -> [N, h, T//64]
         features = self.feature_extractor(sig_in)
+
         # Global reordering and pooling
         # [N, h, T//64] -> [N, h]
         features_out = self.feature_for_classif(features)
+        features_out = features_out.view(-1, features_out.shape[-1]*features_out.shape[-2])
 
         # Vector classifier
         # [N, h] -> [N, n_classes]
