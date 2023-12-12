@@ -6,6 +6,7 @@ from typing import Tuple, Optional, Dict
 from torch.utils.data import DataLoader, Dataset
 import torch
 import logging
+import matplotlib.pyplot as plt
 DATA_ROOT = Path(__file__).parent/"data"
 SAMPLE_DATA_PATH = DATA_ROOT/"samples.hdf5"
 TRAIN = "train"
@@ -105,7 +106,8 @@ class SignalsDataset(Dataset):
         data_path: Path,
         augment_trim: Optional[bool] = False,
         augment_noise: Optional[bool] = 0,
-        augment_rotate: Optional[bool] = False
+        augment_rotate: Optional[bool] = False,
+        debug_augmentation_plot: Optional[bool] = False,
     ):
         if augment_trim:
             logging.warning("ENABLED AUGMENTATION: Trim")
@@ -119,6 +121,7 @@ class SignalsDataset(Dataset):
         signals, _snr, labels_id, _label_dict = get_data(data_path)
         self.signals = signals
         self.labels = labels_id
+        self.debug_augmentation_plot = debug_augmentation_plot
 
     def __len__(self):
         return self.signals.shape[0]
@@ -132,12 +135,33 @@ class SignalsDataset(Dataset):
             # print(signal.shape)
         if self.augment_rotate:
             # TODO: FIX THIS WAY TO MANY ANGLES
-            phi = torch.deg2rad(torch.rand(signal.shape[1]) * 360.)
+            angle_deg = torch.rand(1) * 360.
+            phi = torch.deg2rad(angle_deg)
             s = torch.sin(phi)
             c = torch.cos(phi)
-            rot = torch.stack([torch.stack([c, -s], dim=1),
-                               torch.stack([s, c], dim=1)], dim=1)  # [L, 2, 2]
-            signal = torch.bmm(rot, signal.T.unsqueeze(-1)).squeeze(-1).T
+            # rot = torch.stack([torch.stack([c, -s], dim=1),
+            #                    torch.stack([s, c], dim=1)], dim=1)  # [L, 2, 2]
+
+            rot = torch.Tensor([[c, -s], [s, c]])
+            if self.debug_augmentation_plot:
+                trim_plot = 200
+                plt.plot(signal[0, :trim_plot], signal[1, :trim_plot], ".", label="original")
+                signal_rot = torch.mm(rot, signal)
+                plt.plot(signal_rot[0, :trim_plot],
+                         signal_rot[1, :trim_plot], "+", label="augmented")
+                for el in range(trim_plot):
+                    plt.plot([signal[0, el], signal_rot[0, el]],
+                             [signal[1, el], signal_rot[1, el]], "r-", alpha=0.5)
+                plt.legend()
+                plt.axis("equal")
+                plt.grid()
+                plt.title(
+                    f'Signal augmentation by rotation {float(angle_deg):.1f}°')
+                plt.show()
+
+            signal = torch.mm(rot, signal)
+
+            # signal = torch.bmm(rot, signal.T.unsqueeze(-1)).squeeze(-1).T
         if self.augment_noise:
             # AWGN (additive white gaussian noise)
             # with a standard deviation sampled uniformly from [0, augment_noise]
