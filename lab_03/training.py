@@ -98,18 +98,18 @@ if __name__ == "__main__":
     import argparse
     # from argparse import ArgumentParser
     parser = argparse.ArgumentParser()
-    parser.add_argument("-e",  "--exp", type=int, default=0)
+    parser.add_argument("-e",  "--exp", type=int, nargs="+", default=[0])
     parser.add_argument("-n",  "--n-epochs", type=int, required=False)
     args = parser.parse_args()
-    exp = args.exp
-    from model import get_experience
-    model, hyperparams, augment_config = get_experience(exp)
-    if args.n_epochs is not None:
-        hyperparams["n_epochs"] = args.n_epochs
-    model, metrics_dict = train(
-        model,
-        out_dir=ROOT_DIR/f"exp_{args.exp:04d}",
-        augment_config=augment_config,
-        **hyperparams,
+    for exp in args.exp:
+        from model import get_experience
+        model, hyperparams, augment_config = get_experience(exp)
+        if args.n_epochs is not None:
+            hyperparams["n_epochs"] = args.n_epochs
+        model, metrics_dict = train(
+            model,
+            out_dir=ROOT_DIR/f"exp_{exp:04d}",
+            augment_config=augment_config,
+            **hyperparams,
 
-    )
+        )

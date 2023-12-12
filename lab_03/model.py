@@ -286,13 +286,32 @@ def get_experience(exp):
     elif exp == 6:
         model = Slim_Convolutional(rnn=False)  # 73.3%
         hyperparams["n_epochs"] = 500
+    # AUGMENTATION EXPERIMENTS
     elif exp == 7:
         model = Slim_Convolutional(rnn=False)  # ?
-        hyperparams["n_epochs"] = 500
-        augment_config = {
-            AUGMENT_TRIM: True,
-            AUGMENT_NOISE: 0,
-            AUGMENT_ROTATE: True
-        }
+        hyperparams["n_epochs"] = 1000
+    elif exp == 8:
+        model = Slim_Convolutional(rnn=False)  # ?
+        hyperparams["n_epochs"] = 1000
+        augment_config[AUGMENT_ROTATE] = True
+    elif exp == 9:
+        model = Slim_Convolutional(rnn=False)  # ?
+        hyperparams["n_epochs"] = 1000
+        augment_config[AUGMENT_NOISE] = 0.1
+    elif exp == 10:
+        model = Slim_Convolutional(rnn=False)  # ?
+        hyperparams["n_epochs"] = 1000
+        augment_config[AUGMENT_TRIM] = True
+    elif exp == 11:
+        model = Slim_Convolutional(rnn=False)  # ?
+        hyperparams["n_epochs"] = 1000
+        augment_config[AUGMENT_ROTATE] = True
+        augment_config[AUGMENT_TRIM] = True
+    elif exp == 12:
+        model = Slim_Convolutional(rnn=False)  # ?
+        hyperparams["n_epochs"] = 1000
+        augment_config[AUGMENT_ROTATE] = True
+        augment_config[AUGMENT_TRIM] = True
+        augment_config[AUGMENT_NOISE] = 0.1
 
     return model, hyperparams, augment_config

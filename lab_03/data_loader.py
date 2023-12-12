@@ -127,11 +127,11 @@ class SignalsDataset(Dataset):
         signal = torch.FloatTensor(self.signals[idx, :].T)  # [2, L]
         if self.augment_trim:
             start, length = torch.randint(0, signal.shape[1]//2, (2,))
-            length += signal.shape[1]//4
+            length += signal.shape[1]//2
             signal = signal[:, start:min(start+length, signal.shape[1])]
-            print(signal.shape)
+            # print(signal.shape)
         if self.augment_rotate:
-            phi = torch.rand(signal.shape[1]) * 5 * torch.pi / 180
+            phi = torch.deg2rad(torch.rand(signal.shape[1]) * 360.)
             s = torch.sin(phi)
             c = torch.cos(phi)
             rot = torch.stack([torch.stack([c, -s], dim=1),
@@ -145,34 +145,57 @@ class SignalsDataset(Dataset):
 
 def signals_collate_fn(batch):
     """
-    Collate function for SignalsDataset that trims signals
-    to the minimum length in the batch.
+    Collate function for SignalsDataset that pads signals to a fixed length of 2048.
 
     Args:
     batch (list): A list of tuples, where each tuple contains the signal and label.
 
     Returns:
-    Tensor: A batch of signals, trimmed to the same (minimum) length.
+    Tensor: A batch of signals, padded to the length of 2048.
     Tensor: A batch of labels.
     """
-    
     signals, labels = zip(*batch)
-    print([sig.shape for sig in signals])
 
-    # Find the length of the shortest signal in the batch
-    min_length = min(signal.shape[1] for signal in signals)
-    min_length = min_length % 16
+    # Pad each signal to the length of 2048
+    padded_signals = [torch.cat([signal, torch.zeros(2, 2048 - signal.shape[1])], dim=1)
+                      if signal.shape[1] < 2048 else signal for signal in signals]
 
-    # Trim all signals to the minimum length
-    trimmed_signals = torch.stack(
-        [signal[:, :min_length] for signal in signals])
-    print(trimmed_signals.shape)
+    # Stack the signals into a single tensor
+    padded_signals = torch.stack(padded_signals)
+
     # Stack the labels into a single tensor
     labels = torch.stack(labels)
 
-    return trimmed_signals, labels
+    return padded_signals, labels
 
-# Example usage with a DataLoader
+# def signals_collate_fn(batch):
+#     """
+#     Collate function for SignalsDataset that trims signals
+#     to the minimum length in the batch.
+
+#     Args:
+#     batch (list): A list of tuples, where each tuple contains the signal and label.
+
+#     Returns:
+#     Tensor: A batch of signals, trimmed to the same (minimum) length.
+#     Tensor: A batch of labels.
+#     """
+
+#     signals, labels = zip(*batch)
+#     # print([sig.shape for sig in signals])
+
+#     # Find the length of the shortest signal in the batch
+#     min_length = min(signal.shape[1] for signal in signals)
+#     min_length = min_length % 16
+
+#     # Trim all signals to the minimum length
+#     trimmed_signals = torch.stack(
+#         [signal[:, :min_length] for signal in signals])
+#     # print(trimmed_signals.shape)
+#     # Stack the labels into a single tensor
+#     labels = torch.stack(labels)
+
+#     return trimmed_signals, labels
 
 
 def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
@@ -190,7 +213,7 @@ def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
     """
     dl_dict = {}
     for mode, config_dict in config_data_paths.items():
-        print(config_dict)
+        logging.info(config_dict)
         dataset = SignalsDataset(
             config_dict[PATH],
             augment_trim=config_dict.get(AUGMENT_TRIM, False),
