@@ -12,7 +12,7 @@ from pathlib import Path
 import logging
 from properties import ROOT_DIR
 
-DEVICE = "cpu"
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def train(model: torch.nn.Module,
@@ -23,7 +23,8 @@ def train(model: torch.nn.Module,
           lr_scheduler: Optional[Callable] = None,
           needed_loss_scheduler: bool = False,
           batch_sizes: Optional[Tuple[int, int]] = None,
-          out_dir: Path = None
+          out_dir: Path = None,
+          **kwargs
           ):
     if out_dir is not None:
         out_dir.mkdir(exist_ok=True, parents=True)
@@ -112,6 +113,7 @@ def classical_training_loop(exp_list, n_epochs=None, lr_list=[], device=DEVICE):
             lr_list = [None]
         for lr in lr_list:
             model, hyperparams, augment_config = get_experience(exp)
+            model = model.to(device)
             if n_epochs is not None:
                 hyperparams["n_epochs"] = n_epochs
             if lr is not None:
