@@ -42,11 +42,15 @@ def plot_results(metrics_dict_comparison):
             training_losses), len(valid_losses))/normalization
 
         # axs[0].plot(training_losses, ".", alpha=0.01, label=f"training loss {exp_name}")
+        label_name = exp_name
+        annotation = metrics_dict["config"].get("annotation", None)
+        if annotation is not None:
+            label_name = annotation
         axs[0].plot(epoch_steps, valid_losses,  "-o",
-                    label=f"{exp_name}")
+                    label=f"{label_name}")
         max_acc = np.max(np.array(valid_accuracies))
         axs[1].plot(epoch_steps, 100*np.array(valid_accuracies),
-                    "-", label=f"{exp_name} {max_acc:.1%} {extra}")
+                    "-", label=f"{label_name} {max_acc:.1%} {extra}")
     axs[0].set_xlabel("Epoch")
     axs[0].set_ylabel("Loss")
     axs[0].legend()
