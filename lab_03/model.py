@@ -295,27 +295,34 @@ def get_experience(exp):
     # AUGMENTATION EXPERIMENTS
     elif exp == 8:
         model = Slim_Convolutional(rnn=False)  # ?
-        hyperparams["n_epochs"] = 1000
+        hyperparams["n_epochs"] = 100
         augment_config[AUGMENT_ROTATE] = True
+        hyperparams["batch_sizes"] = (512, 1024)
     elif exp == 9:
         model = Slim_Convolutional(rnn=False)  # ?
-        hyperparams["n_epochs"] = 1000
+        hyperparams["n_epochs"] = 100
         augment_config[AUGMENT_NOISE] = 0.1
+        hyperparams["batch_sizes"] = (512, 1024)
     elif exp == 10:
         model = Slim_Convolutional(rnn=False)  # ?
-        hyperparams["n_epochs"] = 1000
+        hyperparams["n_epochs"] = 100
         augment_config[AUGMENT_TRIM] = True
+
     elif exp == 11:
         model = Slim_Convolutional(rnn=False)  # ?
-        hyperparams["n_epochs"] = 1000
+        hyperparams["n_epochs"] = 100
         augment_config[AUGMENT_ROTATE] = True
         augment_config[AUGMENT_TRIM] = True
     elif exp == 12:
         model = Slim_Convolutional(rnn=False)  # ?
-        hyperparams["n_epochs"] = 1000
+        hyperparams["n_epochs"] = 100
         augment_config[AUGMENT_ROTATE] = True
         augment_config[AUGMENT_TRIM] = True
         augment_config[AUGMENT_NOISE] = 0.1
+    elif exp == 19: # No augmentation
+        model = Slim_Convolutional(rnn=False)  # ?
+        hyperparams["n_epochs"] = 100
+        hyperparams["batch_sizes"] = (512, 1024)
     # LR experiments
     elif exp == 20:
         model = Slim_Convolutional(rnn=False)  # 78%
