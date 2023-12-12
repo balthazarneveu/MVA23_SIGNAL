@@ -139,7 +139,8 @@ class SignalsDataset(Dataset):
                                torch.stack([s, c], dim=1)], dim=1)  # [L, 2, 2]
             signal = torch.bmm(rot, signal.T.unsqueeze(-1)).squeeze(-1).T
         if self.augment_noise:
-            signal += torch.randn(signal.shape)*torch.rand(1.)*self.augment_noise
+            # TODO: FIX THIS WAY TO MANY NOISE
+            signal += torch.randn(signal.shape)*self.augment_noise
         label = torch.LongTensor([self.labels[idx]])
         return signal, label
 
