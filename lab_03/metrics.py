@@ -25,6 +25,9 @@ def plot_results(metrics_dict_comparison):
         if lr is not None:
             lr = float(lr)
             extra += f" lr={lr:.1E}"
+        lr_scheduler_name = metrics_dict["config"].get("lr_scheduler_name", None)
+        if lr_scheduler_name is not None:
+            extra += f" {lr_scheduler_name}"
         for aug_type in ["rotate", "trim", "noise"]:
             augment_val = metrics_dict["config"].get(f"augment_{aug_type}", {})
             if augment_val is not None:
