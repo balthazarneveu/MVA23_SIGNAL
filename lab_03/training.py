@@ -6,11 +6,12 @@ import torch
 from tqdm import tqdm
 from data_loader import TRAIN, VALID, BATCH_SIZE, get_dataloaders, CONFIG_DATALOADER
 import numpy as np
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Callable
 from dump import Dump
 from pathlib import Path
 import logging
 ROOT_DIR = Path(__file__).parent/"__dump"
+DEVICE = "cpu"
 
 
 def train(model: torch.nn.Module,
@@ -18,6 +19,8 @@ def train(model: torch.nn.Module,
           augment_config: Optional[dict] = {},
           device: str = "cuda",
           lr: float = 1E-4, n_epochs=5,
+          lr_scheduler: Optional[Callable] = None,
+          needed_loss_scheduler: bool = False,
           batch_sizes: Optional[Tuple[int, int]] = None,
           out_dir: Path = None
           ):
@@ -31,6 +34,8 @@ def train(model: torch.nn.Module,
     dataloaders = get_dataloaders()
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    if lr_scheduler is not None:
+        scheduler = lr_scheduler(optimizer)
     training_losses = []
     valid_losses = []
     valid_accuracies = []
@@ -58,6 +63,10 @@ def train(model: torch.nn.Module,
             training_losses_epoch.append(loss.detach().cpu())
         training_losses.extend(training_losses_epoch)
         training_loss = np.array(training_losses_epoch).mean()
+        if lr_scheduler is not None and needed_loss_scheduler:
+            scheduler.step(training_loss)
+        elif lr_scheduler is not None:
+            scheduler.step()
         # Evaluate accuracy on the validation set
         model.eval()
         valid_loss = []
@@ -80,7 +89,8 @@ def train(model: torch.nn.Module,
         valid_accuracies.append(accuracy)
         valid_loss = np.array(valid_loss).mean()
         valid_losses.append(valid_loss)
-        print(f"{epoch=} | {training_loss=:.3f} | {valid_loss=:.3} | {accuracy:.2%}")
+        print(
+            f"{epoch=} | lr={float(optimizer.param_groups[0]['lr']):.2e} | {training_loss=:.3f} | {valid_loss=:.3} | {accuracy:.2%}")
         if valid_loss <= valid_loss_previous:
             torch.save(model, out_dir/"best_model.pth")
             valid_loss_previous = valid_loss

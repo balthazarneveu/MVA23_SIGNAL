@@ -1,3 +1,6 @@
+#Data files
+*.hdf5
+
 # Byte-compiled / optimized / DLL files
 **/*__*/**
 __pycache__/
