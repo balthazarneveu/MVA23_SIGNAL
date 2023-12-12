@@ -9,7 +9,7 @@ import numpy as np
 from typing import Tuple, Optional
 from dump import Dump
 from pathlib import Path
-
+import logging
 ROOT_DIR = Path(__file__).parent/"__dump"
 
 
@@ -94,22 +94,33 @@ def train(model: torch.nn.Module,
     return model, metrics_dict
 
 
+def classical_training_loop(exp_list, n_epochs=None, lr_list=[]):
+    for exp in exp_list:
+        from model import get_experience
+        if lr_list is None or len(lr_list) == 0:
+            lr_list = [None]
+        for lr in lr_list:
+            model, hyperparams, augment_config = get_experience(exp)
+            if n_epochs is not None:
+                hyperparams["n_epochs"] = n_epochs
+            if lr is not None:
+                logging.warning(f"Forcing lr to {lr}")
+                hyperparams["lr"] = lr
+            suffix = f"_lr_{lr:.1E}" if lr is not None else ""
+            model, metrics_dict = train(
+                model,
+                out_dir=ROOT_DIR/f"exp_{exp:04d}{suffix}",
+                augment_config=augment_config,
+                **hyperparams,
+            )
+
+
 if __name__ == "__main__":
     import argparse
     # from argparse import ArgumentParser
     parser = argparse.ArgumentParser()
     parser.add_argument("-e",  "--exp", type=int, nargs="+", default=[0])
+    parser.add_argument("-lr",  "--lr", type=float, nargs="+", default=[])
     parser.add_argument("-n",  "--n-epochs", type=int, required=False)
     args = parser.parse_args()
-    for exp in args.exp:
-        from model import get_experience
-        model, hyperparams, augment_config = get_experience(exp)
-        if args.n_epochs is not None:
-            hyperparams["n_epochs"] = args.n_epochs
-        model, metrics_dict = train(
-            model,
-            out_dir=ROOT_DIR/f"exp_{exp:04d}",
-            augment_config=augment_config,
-            **hyperparams,
-
-        )
+    classical_training_loop(args.exp, n_epochs=args.n_epochs, lr_list=args.lr)
