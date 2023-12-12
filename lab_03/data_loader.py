@@ -139,8 +139,12 @@ class SignalsDataset(Dataset):
                                torch.stack([s, c], dim=1)], dim=1)  # [L, 2, 2]
             signal = torch.bmm(rot, signal.T.unsqueeze(-1)).squeeze(-1).T
         if self.augment_noise:
-            # TODO: FIX THIS WAY TO MANY NOISE
-            signal += torch.randn(signal.shape)*self.augment_noise
+            # AWGN (additive white gaussian noise)
+            # with a standard deviation sampled uniformly from [0, augment_noise]
+            # Each signal has a different noise level
+            std_dev = torch.rand(1)*self.augment_noise
+            std_dev = std_dev.repeat(2, 1)
+            signal += torch.randn(signal.shape)*std_dev
         label = torch.LongTensor([self.labels[idx]])
         return signal, label
 
