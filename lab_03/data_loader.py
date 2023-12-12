@@ -131,6 +131,7 @@ class SignalsDataset(Dataset):
             signal = signal[:, start:min(start+length, signal.shape[1])]
             # print(signal.shape)
         if self.augment_rotate:
+            # TODO: FIX THIS WAY TO MANY ANGLES
             phi = torch.deg2rad(torch.rand(signal.shape[1]) * 360.)
             s = torch.sin(phi)
             c = torch.cos(phi)

@@ -172,6 +172,7 @@ class Slim_Convolutional(torch.nn.Module):
             )
             classif_dim = h_dim_rnn*2
         else:
+            # Create trims of size pool_temporal
             self.pool_temporal = torch.nn.AvgPool1d(kernel_size=pool_temporal)
             classif_dim = h_dim*conv_length_output // pool_temporal
         self.fc1 = torch.nn.Linear(classif_dim, h_dim_classifier)
