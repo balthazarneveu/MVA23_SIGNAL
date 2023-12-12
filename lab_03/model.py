@@ -1,5 +1,5 @@
 import torch
-from data_loader import AUGMENT_TRIM, AUGMENT_NOISE, AUGMENT_ROTATE
+from data_loader import AUGMENT_TRIM, AUGMENT_NOISE, AUGMENT_ROTATE, SNR_FILTER
 from properties import ROOT_DIR, N_CLASSES
 from architecture import FlexiConv
 
@@ -378,4 +378,16 @@ def get_experience(exp):
         hyperparams["n_epochs"] = 300
         hyperparams["batch_sizes"] = (512, 1024)
         hyperparams["annotation"] = "Flexconv H=16"
+    elif exp == 36:  # 4 it / sec -> H=16
+        model = FlexiConv(h_dim=16)
+        hyperparams["n_epochs"] = 20
+        hyperparams["batch_sizes"] = (512, 1024)
+        hyperparams["annotation"] = "Flexconv H=16 train HighSNR"
+        augment_config[SNR_FILTER] = [10, 20, 30]
+    elif exp == 37:  # 4 it / sec -> H=16
+        model = FlexiConv(h_dim=16)
+        hyperparams["n_epochs"] = 100
+        hyperparams["batch_sizes"] = (512, 1024)
+        hyperparams["annotation"] = "Flexconv H=16 train on HighSNR"
+        augment_config[SNR_FILTER] = [10, 20, 30]
     return model, hyperparams, augment_config

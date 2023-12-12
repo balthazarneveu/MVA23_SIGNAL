@@ -125,11 +125,14 @@ class SignalsDataset(Dataset):
         self.augment_rotate = augment_rotate
         signals, snr, labels_id, _label_dict = get_data(data_path)
         if snr_filter is not None:
+            signals_f, labels_id_f, snr_f = [], [], []
             for snr_filt in snr_filter:
-                signals = signals[snr == snr_filt]
-                labels_id = labels_id[snr == snr_filt]
-                snr = snr[snr == snr_filt]
-
+                signals_f.extend(signals[snr == snr_filt])
+                labels_id_f.extend(labels_id[snr == snr_filt])
+                snr_f.extend(snr[snr == snr_filt])
+            signals = np.array(signals_f)
+            labels_id = np.array(labels_id_f)
+            snr = np.array(snr_f)
         self.signals = signals
         self.labels = labels_id
         self.debug_augmentation_plot = debug_augmentation_plot
@@ -272,8 +275,9 @@ def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
 
 
 if __name__ == '__main__':
-    config_data_paths = CONFIG_DATALOADER
-    config_data_paths[TRAIN][SNR_FILTER] = [10, 20, 30]  # Select some SNR
-    dl_dict = get_dataloaders()
+    from copy import deepcopy
+    config_data_paths = deepcopy(CONFIG_DATALOADER)
+    config_data_paths[TRAIN][SNR_FILTER] = [0,] #[10, 20, 30]  # Select some SNR
+    dl_dict = get_dataloaders(config_data_paths)
     print(len(dl_dict[TRAIN].dataset))
     batch_signal, batch_labels = next(iter(dl_dict[TRAIN]))

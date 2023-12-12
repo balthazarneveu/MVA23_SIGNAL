@@ -11,12 +11,12 @@ from dump import Dump
 from pathlib import Path
 import logging
 from properties import ROOT_DIR
-
+from copy import deepcopy
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def train(model: torch.nn.Module,
-          config_dataloader=CONFIG_DATALOADER,
+          config_dataloader=deepcopy(CONFIG_DATALOADER),
           augment_config: Optional[dict] = {},
           device: str = "cuda",
           lr: float = 1E-4, n_epochs=5,
@@ -33,7 +33,7 @@ def train(model: torch.nn.Module,
     config[TRAIN] = {**config[TRAIN], **augment_config}
     if batch_sizes is not None:
         config[TRAIN][BATCH_SIZE], config[VALID][BATCH_SIZE] = batch_sizes
-    dataloaders = get_dataloaders()
+    dataloaders = get_dataloaders(config_data_paths=config)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     if lr_scheduler is not None:
