@@ -349,14 +349,24 @@ def get_experience(exp):
     elif exp == 30:  # 15it / sec -> H=4
         # NOK!!!!
         model = FlexiConv(h_dim=4)
-        hyperparams["n_epochs"] = 20
+        hyperparams["n_epochs"] = 100
         hyperparams["batch_sizes"] = (512, 1024)
     elif exp == 31:  # 4 it / sec -> H=16
         model = FlexiConv(h_dim=16)
-        hyperparams["n_epochs"] = 20
+        hyperparams["n_epochs"] = 100
         hyperparams["batch_sizes"] = (512, 1024)
-    elif exp == 32:  # 2 it / sec -> H=32
+    elif exp == 32:  # ??
+        model = FlexiConv(h_dim=8)
+        hyperparams["n_epochs"] = 100
+        hyperparams["batch_sizes"] = (512, 1024)
+    elif exp == 33:  # 2 it / sec -> H=32
         model = FlexiConv(h_dim=32)
-        hyperparams["n_epochs"] = 20
+        hyperparams["n_epochs"] = 100
         hyperparams["batch_sizes"] = (512, 1024)
+    elif exp == 34:
+        model = FlexiConv(h_dim=16)
+        hyperparams["n_epochs"] = 100
+        hyperparams["batch_sizes"] = (512, 1024)
+        augment_config[AUGMENT_TRIM] = True
+        augment_config[AUGMENT_ROTATE] = True
     return model, hyperparams, augment_config
