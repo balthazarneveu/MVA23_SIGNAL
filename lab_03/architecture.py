@@ -130,7 +130,7 @@ class FlexiConv(torch.nn.Module):
         y = self.classifier_2(y)
         y = self.final_pool(y)
 
-        return y
+        return y.squeeze(-1)
 
 
 if __name__ == "__main__":

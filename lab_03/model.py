@@ -1,7 +1,7 @@
 import torch
 from data_loader import AUGMENT_TRIM, AUGMENT_NOISE, AUGMENT_ROTATE
 from properties import ROOT_DIR, N_CLASSES
-
+from architecture import FlexiConv
 
 class VanillaClassifier(torch.nn.Module):
     def __init__(self, ch_in: int = 2, n_classes: int = N_CLASSES,
@@ -347,4 +347,8 @@ def get_experience(exp):
             optimizer, factor=0.1, patience=2, threshold=1e-4)
         hyperparams["needed_loss_scheduler"] = True
 
+    elif exp == 30:  # No augmentation
+        model = FlexiConv()
+        hyperparams["n_epochs"] = 100
+        hyperparams["batch_sizes"] = (512, 1024)
     return model, hyperparams, augment_config
