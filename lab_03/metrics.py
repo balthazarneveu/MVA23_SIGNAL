@@ -21,8 +21,9 @@ def plot_results(metrics_dict_comparison):
         # axs[0].plot(training_losses, ".", alpha=0.01, label=f"training loss {exp_name}")
         axs[0].plot(epoch_steps, valid_losses,  "-o",
                     label=f"validation loss {exp_name}")
+        max_acc = np.max(np.array(valid_accuracies))
         axs[1].plot(epoch_steps, 100*np.array(valid_accuracies),
-                    "-", label=f"validation accuracy {exp_name}")
+                    "-", label=f"validation accuracy {exp_name} {max_acc:.1%}")
     axs[0].set_xlabel("Step")
     axs[0].set_ylabel("Loss")
     axs[0].legend()
