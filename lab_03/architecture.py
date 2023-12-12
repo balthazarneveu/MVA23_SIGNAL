@@ -20,11 +20,20 @@ class BuildingBlockConvolutions(torch.nn.Module):
             ch_out = ch_in
         if ch_inner is None:
             ch_inner = ch_in
+        self.repeat_factor = 1
         if ch_inner != ch_in and res:
-            logging.warning(
-                "Residual connection with different sizes" +
-                f"{ch_in:=} != {ch_inner:=} -> Forcing ch_inner={ch_in}")
-            ch_inner = ch_in
+            if ch_inner < ch_in:
+                logging.warning(
+                    "Residual connection with different sizes: " +
+                    f"{ch_in:=} < {ch_inner:=} -> Forcing ch_inner={ch_in}"
+                )
+                ch_inner = ch_in
+            elif ch_inner > ch_in:
+                # ch_inner = ch_in
+                self.repeat_factor = ch_inner//ch_in
+                assert self.repeat_factor*ch_in == ch_inner, \
+                    "Cannot repeat residual connection properly"
+
         self.res = res
         self.conv_first = torch.nn.Conv1d(
             ch_in, ch_inner, kernel_size=kernel_sizes[0],
@@ -48,7 +57,11 @@ class BuildingBlockConvolutions(torch.nn.Module):
         """
         residual_filtered_1 = self.non_linearity(self.conv_first(sig_in))
         if self.res:
-            residual_filtered_1 += sig_in
+            if self.repeat_factor > 1:
+                # Repeating the input signal to match the residual size
+                residual_filtered_1 += sig_in.repeat(1, self.repeat_factor, 1)
+            else:
+                residual_filtered_1 += sig_in
         filtered_2 = self.conv_downsample(residual_filtered_1)
         filtered_2 = self.non_linearity(filtered_2)
         return filtered_2
@@ -58,14 +71,21 @@ if __name__ == "__main__":
     N, C, T = 4, 2, 1024
     x = torch.randn(N, C, T)
 
-    for k_size, ds, ch_out in product([3, 5, 7], [1, 2, 4], [None, 16, 32]):
+    for k_size, ds, ch_out, ch_inner, res in product(
+        [3, 5, 7],
+        [1, 2, 4],
+        [None, 16, 32],
+        [None, 4, 12],
+        [True, False]
+    ):
 
         conv = BuildingBlockConvolutions(
             C,
             ch_out=ch_out,
             ch_inner=4,
             kernel_sizes=[k_size],
-            downsample=ds
+            downsample=ds,
+            res=res
         )
         y = conv(x)
         print(x.shape, y.shape)
