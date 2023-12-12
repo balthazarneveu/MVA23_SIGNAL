@@ -3,6 +3,7 @@ from data_loader import AUGMENT_TRIM, AUGMENT_NOISE, AUGMENT_ROTATE
 from properties import ROOT_DIR, N_CLASSES
 from architecture import FlexiConv
 
+
 class VanillaClassifier(torch.nn.Module):
     def __init__(self, ch_in: int = 2, n_classes: int = N_CLASSES,
                  h_dim=8, h_dim_classifier=128, k_size=5
@@ -210,8 +211,6 @@ class Slim_Convolutional(torch.nn.Module):
         return logits
 
 
-
-
 class RnnBaseline(torch.nn.Module):
     def __init__(
         self,
@@ -347,8 +346,17 @@ def get_experience(exp):
             optimizer, factor=0.1, patience=2, threshold=1e-4)
         hyperparams["needed_loss_scheduler"] = True
 
-    elif exp == 30:  # No augmentation
-        model = FlexiConv()
-        hyperparams["n_epochs"] = 100
+    elif exp == 30:  # 15it / sec -> H=4
+        # NOK!!!!
+        model = FlexiConv(h_dim=4)
+        hyperparams["n_epochs"] = 20
+        hyperparams["batch_sizes"] = (512, 1024)
+    elif exp == 31:  # 4 it / sec -> H=16
+        model = FlexiConv(h_dim=16)
+        hyperparams["n_epochs"] = 20
+        hyperparams["batch_sizes"] = (512, 1024)
+    elif exp == 32:  # 2 it / sec -> H=32
+        model = FlexiConv(h_dim=32)
+        hyperparams["n_epochs"] = 20
         hyperparams["batch_sizes"] = (512, 1024)
     return model, hyperparams, augment_config

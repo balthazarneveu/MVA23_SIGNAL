@@ -85,24 +85,43 @@ class FlexiConv(torch.nn.Module):
     def __init__(
         self,
         dim_in: Optional[int] = 2,
+        h_dim: Optional[int] = 32,
+        h_classifier: Optional[int] = 512,
         n_classes: Optional[int] = N_CLASSES,
     ):
         super().__init__()
+        # -> C=2 , L=2048 (/1)
         self.block1 = BuildingBlockConvolutions(
-            dim_in, ch_inner=32, ch_out=32, kernel_sizes=[3])  # -> L=1024
+            dim_in, ch_inner=h_dim, ch_out=h_dim, kernel_sizes=[3])
+
+        # -> C=32 (*1), L=1024 (/2)
         self.block2 = BuildingBlockConvolutions(
-            32, ch_inner=64, ch_out=64, kernel_sizes=[3])  # -> L=512
+            h_dim, ch_inner=h_dim, ch_out=h_dim*2, kernel_sizes=[3])
+
+        # -> C=64 (*2), L=512  (/4)
         self.block3 = BuildingBlockConvolutions(
-            64, ch_inner=128, ch_out=128, kernel_sizes=[3])  # -> L=256
+            h_dim*2, ch_inner=h_dim*4, ch_out=h_dim*4, kernel_sizes=[3])
+
+        # -> C=128 (*4), L=256 (/8)
         self.block4 = BuildingBlockConvolutions(
-            128, ch_inner=128, ch_out=256, kernel_sizes=[3])  # -> L=128
+            h_dim*4, ch_inner=h_dim*4, ch_out=h_dim*8, kernel_sizes=[3])
+
+        # -> C=256 (*8), L=128 (/16)
         self.block5 = BuildingBlockConvolutions(
-            256, ch_inner=256, ch_out=512, kernel_sizes=[3], downsample=4)  # -> L=64
+            h_dim*8, ch_inner=h_dim*8, ch_out=h_dim*16, kernel_sizes=[3], downsample=4)
+
+        # -> C=256 (*16), L=32 (/64)
+        h_out = h_dim*16
         self.block6 = BuildingBlockConvolutions(
-            512, ch_inner=512, ch_out=512, kernel_sizes=[3], downsample=4)  # -> L=16
-        self.classifier_1 = torch.nn.Conv1d(512, 512, kernel_size=1)
+            h_dim*16, ch_inner=h_dim*16, ch_out=h_out, kernel_sizes=[3], downsample=2)
+
+        # -> C=512 (*16), L=16 (/128)
+
+        self.classifier_1 = torch.nn.Conv1d(
+            h_out, h_classifier, kernel_size=1)
         self.classifier_non_linearity = torch.nn.LeakyReLU()
-        self.classifier_2 = torch.nn.Conv1d(512, n_classes, kernel_size=1)
+        self.classifier_2 = torch.nn.Conv1d(
+            h_classifier, n_classes, kernel_size=1)
         self.final_pool = torch.nn.AdaptiveMaxPool1d(1)
 
     def forward(self, sig_in: torch.Tensor) -> torch.Tensor:
