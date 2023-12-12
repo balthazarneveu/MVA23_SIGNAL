@@ -286,10 +286,10 @@ def get_experience(exp):
     elif exp == 6:
         model = Slim_Convolutional(rnn=False)  # 73.3%
         hyperparams["n_epochs"] = 500
-    # AUGMENTATION EXPERIMENTS
     elif exp == 7:
-        model = Slim_Convolutional(rnn=False)  # ?
+        model = Slim_Convolutional(rnn=False)  # ?*
         hyperparams["n_epochs"] = 1000
+    # AUGMENTATION EXPERIMENTS
     elif exp == 8:
         model = Slim_Convolutional(rnn=False)  # ?
         hyperparams["n_epochs"] = 1000

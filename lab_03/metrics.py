@@ -41,6 +41,7 @@ if __name__ == "__main__":
     metrics_dict_comparison = {}
     for exp_dir in sorted(list(exp_dirs)):
         exp_name = exp_dir.name
-        
-        metrics_dict_comparison[exp_name] = Dump.load_pickle(exp_dir/"metrics.pkl")
+        checkpoint_file = exp_dir/"metrics.pkl"
+        if checkpoint_file.exists():
+            metrics_dict_comparison[exp_name] = Dump.load_pickle(checkpoint_file)
     plot_results(metrics_dict_comparison)
