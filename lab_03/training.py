@@ -108,6 +108,7 @@ if __name__ == "__main__":
             hyperparams["n_epochs"] = args.n_epochs
         model, metrics_dict = train(
             model,
+            device="cpu",
             out_dir=ROOT_DIR/f"exp_{exp:04d}",
             augment_config=augment_config,
             **hyperparams,
