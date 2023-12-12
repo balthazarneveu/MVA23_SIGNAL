@@ -4,7 +4,7 @@ import torch
 #     from tqdm.notebook import tqdm
 # except Exception as exc:
 from tqdm import tqdm
-from data_loader import TRAIN, VALID, BATCH_SIZE, get_dataloaders, CONFIG_DATALOADER
+from data_loader import TRAIN, VALID, BATCH_SIZE, get_dataloaders, CONFIG_DATALOADER, CONSIDERED_SNR
 import numpy as np
 from typing import Tuple, Optional, Callable
 from dump import Dump
@@ -39,8 +39,8 @@ def train(model: torch.nn.Module,
     if lr_scheduler is not None:
         scheduler = lr_scheduler(optimizer)
     training_losses = []
-    valid_losses = []
-    valid_accuracies = []
+    valid_losses = {snr : [] for snr in config[VALID][CONSIDERED_SNR]}
+    valid_accuracies = {snr : [] for snr in config[VALID][CONSIDERED_SNR]}
     valid_loss_previous = 10000000000.
     # Loop over epochs
     for epoch in range(n_epochs):
@@ -73,6 +73,7 @@ def train(model: torch.nn.Module,
         model.eval()
         valid_loss = []
         correct_detection = []
+        # for snr in config[VALID][CONSIDERED_SNR] :
         for signal, labels in dataloaders[VALID]:
             with torch.no_grad():
                 signal = signal.to(device)

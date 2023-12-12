@@ -17,6 +17,7 @@ SHUFFLE = "shuffle"
 AUGMENT_TRIM = "augment_trim"
 AUGMENT_NOISE = "augment_noise"
 AUGMENT_ROTATE = "augment_rotate"
+CONSIDERED_SNR = "considered_snr"
 
 DEFAULT_BATCH_SIZE = 8
 CONFIG_DATALOADER = {
@@ -27,6 +28,7 @@ CONFIG_DATALOADER = {
         AUGMENT_TRIM: False,  # These can be modified
         AUGMENT_NOISE: 0,
         AUGMENT_ROTATE: False,
+        CONSIDERED_SNR: None
     },
     VALID: {
         PATH: DATA_ROOT/"validation.hdf5",
@@ -35,6 +37,7 @@ CONFIG_DATALOADER = {
         AUGMENT_TRIM: False,
         AUGMENT_NOISE: 0,
         AUGMENT_ROTATE: False,
+        CONSIDERED_SNR: [20]
     }
 }
 
@@ -109,6 +112,7 @@ class SignalsDataset(Dataset):
         augment_noise: Optional[bool] = 0,
         augment_rotate: Optional[bool] = False,
         debug_augmentation_plot: Optional[bool] = False,
+        considered_snr: Optional[list] = None
     ):
         if augment_trim:
             logging.warning("ENABLED AUGMENTATION: Trim")
@@ -119,7 +123,15 @@ class SignalsDataset(Dataset):
         if augment_rotate:
             logging.warning("ENABLED AUGMENTATION: Rotate")
         self.augment_rotate = augment_rotate
-        signals, _snr, labels_id, _label_dict = get_data(data_path)
+        signals, snrs, labels_id, _label_dict = get_data(data_path)
+        if considered_snr is not None:
+            snr_idx = np.array([], dtype=int)
+            print(considered_snr)
+            for snr in considered_snr:
+                snr_indices = np.where(snrs == snr)[0]  # Extract indices from the tuple
+                snr_idx = np.concatenate((snr_idx, snr_indices), axis=0)
+            signals = signals[snr_idx]
+            labels_id = labels_id[snr_idx]
         self.signals = signals
         self.labels = labels_id
         self.debug_augmentation_plot = debug_augmentation_plot
@@ -242,20 +254,39 @@ def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
     """
     dl_dict = {}
     for mode, config_dict in config_data_paths.items():
-        logging.info(config_dict)
-        dataset = SignalsDataset(
+        if config_dict[CONSIDERED_SNR] is not None :
+            for snr in config_dict[CONSIDERED_SNR] :
+                logging.info(config_dict)
+                dataset = SignalsDataset(
+                config_dict[PATH],
+                augment_trim=config_dict.get(AUGMENT_TRIM, False),
+                augment_noise=config_dict.get(AUGMENT_NOISE, 0),
+                augment_rotate=config_dict.get(AUGMENT_ROTATE, False),
+                considered_snr=snr)
+                dl = DataLoader(
+                    dataset,
+                    shuffle=config_dict[SHUFFLE],
+                    batch_size=config_dict[BATCH_SIZE],
+                    collate_fn=signals_collate_fn if config_dict.get(
+                        AUGMENT_TRIM, False) else None
+                )
+                dl_dict[mode][snr] = dl
+        else :
+            logging.info(config_dict)
+            dataset = SignalsDataset(
             config_dict[PATH],
             augment_trim=config_dict.get(AUGMENT_TRIM, False),
             augment_noise=config_dict.get(AUGMENT_NOISE, 0),
-            augment_rotate=config_dict.get(AUGMENT_ROTATE, False),)
-        dl = DataLoader(
-            dataset,
-            shuffle=config_dict[SHUFFLE],
-            batch_size=config_dict[BATCH_SIZE],
-            collate_fn=signals_collate_fn if config_dict.get(
-                AUGMENT_TRIM, False) else None
-        )
-        dl_dict[mode] = dl
+            augment_rotate=config_dict.get(AUGMENT_ROTATE, False),
+            considered_snr=None)
+            dl = DataLoader(
+                dataset,
+                shuffle=config_dict[SHUFFLE],
+                batch_size=config_dict[BATCH_SIZE],
+                collate_fn=signals_collate_fn if config_dict.get(
+                    AUGMENT_TRIM, False) else None
+            )
+            dl_dict[mode] = dl
     return dl_dict
 
 

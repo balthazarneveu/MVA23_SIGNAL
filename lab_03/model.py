@@ -445,4 +445,11 @@ def get_experience(exp):
         hyperparams["lr_scheduler"] = lambda optimizer: torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, factor=0.1, patience=2, threshold=1e-4)
         hyperparams["needed_loss_scheduler"] = True
+    elif exp == 25 :
+        model = Big_Convolutional(h_dim=64)
+        hyperparams["n_epochs"] = 300
+        hyperparams["lr_scheduler_name"] = "Plateau_0.1_2_1e-4"
+        hyperparams["lr_scheduler"] = lambda optimizer: torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, factor=0.1, patience=2, threshold=1e-4)
+        hyperparams["needed_loss_scheduler"] = True
     return model, hyperparams, augment_config
