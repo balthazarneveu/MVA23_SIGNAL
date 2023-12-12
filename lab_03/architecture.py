@@ -1,6 +1,8 @@
 import torch
 from typing import Optional
 from itertools import product
+from properties import N_CLASSES
+import logging
 
 
 class BuildingBlockConvolutions(torch.nn.Module):
@@ -17,6 +19,11 @@ class BuildingBlockConvolutions(torch.nn.Module):
         if ch_out is None:
             ch_out = ch_in
         if ch_inner is None:
+            ch_inner = ch_in
+        if ch_inner != ch_in and res:
+            logging.warning(
+                "Residual connection with different sizes" +
+                f"{ch_in:=} != {ch_inner:=} -> Forcing ch_inner={ch_in}")
             ch_inner = ch_in
         self.res = res
         self.conv_first = torch.nn.Conv1d(
@@ -43,6 +50,7 @@ class BuildingBlockConvolutions(torch.nn.Module):
         if self.res:
             residual_filtered_1 += sig_in
         filtered_2 = self.conv_downsample(residual_filtered_1)
+        filtered_2 = self.non_linearity(filtered_2)
         return filtered_2
 
 
@@ -51,9 +59,11 @@ if __name__ == "__main__":
     x = torch.randn(N, C, T)
 
     for k_size, ds, ch_out in product([3, 5, 7], [1, 2, 4], [None, 16, 32]):
+
         conv = BuildingBlockConvolutions(
             C,
             ch_out=ch_out,
+            ch_inner=4,
             kernel_sizes=[k_size],
             downsample=ds
         )

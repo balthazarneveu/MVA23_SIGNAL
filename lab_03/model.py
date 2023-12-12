@@ -1,7 +1,6 @@
 import torch
 from data_loader import AUGMENT_TRIM, AUGMENT_NOISE, AUGMENT_ROTATE
-from properties import ROOT_DIR
-N_CLASSES = 6
+from properties import ROOT_DIR, N_CLASSES
 
 
 class VanillaClassifier(torch.nn.Module):
@@ -209,6 +208,8 @@ class Slim_Convolutional(torch.nn.Module):
         # [N, 64] -> [N, n_classes]
         logits = self.classifier(vector)
         return logits
+
+
 
 
 class RnnBaseline(torch.nn.Module):
