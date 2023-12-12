@@ -60,6 +60,7 @@ def get_data(data_path: Optional[Path] = SAMPLE_DATA_PATH) -> Tuple[
         snr = np.array(data['snr'])
         labels_id = np.array(data['labels'])
         label_dict = get_labels(data)
+    logging.info(f"Loaded {len(signals)} signals from {data_path}")
     return signals, snr, labels_id, label_dict
 
 
@@ -260,4 +261,5 @@ def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
 
 if __name__ == '__main__':
     dl_dict = get_dataloaders()
+    print(len(dl_dict[TRAIN].dataset))
     batch_signal, batch_labels = next(iter(dl_dict[TRAIN]))

@@ -10,8 +10,9 @@ from typing import Tuple, Optional, Callable
 from dump import Dump
 from pathlib import Path
 import logging
-ROOT_DIR = Path(__file__).parent/"__dump"
-DEVICE = "cpu"
+from properties import ROOT_DIR
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def train(model: torch.nn.Module,
@@ -22,7 +23,8 @@ def train(model: torch.nn.Module,
           lr_scheduler: Optional[Callable] = None,
           needed_loss_scheduler: bool = False,
           batch_sizes: Optional[Tuple[int, int]] = None,
-          out_dir: Path = None
+          out_dir: Path = None,
+          **kwargs
           ):
     if out_dir is not None:
         out_dir.mkdir(exist_ok=True, parents=True)
@@ -34,7 +36,7 @@ def train(model: torch.nn.Module,
     dataloaders = get_dataloaders()
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    if lr_scheduler is not None :
+    if lr_scheduler is not None:
         scheduler = lr_scheduler(optimizer)
     training_losses = []
     valid_losses = []
@@ -63,9 +65,9 @@ def train(model: torch.nn.Module,
             training_losses_epoch.append(loss.detach().cpu())
         training_losses.extend(training_losses_epoch)
         training_loss = np.array(training_losses_epoch).mean()
-        if lr_scheduler is not None and needed_loss_scheduler :
+        if lr_scheduler is not None and needed_loss_scheduler:
             scheduler.step(training_loss)
-        elif lr_scheduler is not None :
+        elif lr_scheduler is not None:
             scheduler.step()
         # Evaluate accuracy on the validation set
         model.eval()
@@ -89,7 +91,8 @@ def train(model: torch.nn.Module,
         valid_accuracies.append(accuracy)
         valid_loss = np.array(valid_loss).mean()
         valid_losses.append(valid_loss)
-        print(f"{epoch=} | lr={float(optimizer.param_groups[0]['lr']):.2e} | {training_loss=:.3f} | {valid_loss=:.3} | {accuracy:.2%}")
+        print(
+            f"{epoch=} | lr={float(optimizer.param_groups[0]['lr']):.2e} | {training_loss=:.3f} | {valid_loss=:.3} | {accuracy:.2%}")
         if valid_loss <= valid_loss_previous:
             torch.save(model, out_dir/"best_model.pth")
             valid_loss_previous = valid_loss
@@ -103,25 +106,42 @@ def train(model: torch.nn.Module,
     return model, metrics_dict
 
 
-def classical_training_loop(exp_list, n_epochs=None, lr_list=[]):
+def classical_training_loop(exp_list, n_epochs=None, lr_list=[], device=DEVICE):
     for exp in exp_list:
         from model import get_experience
         if lr_list is None or len(lr_list) == 0:
             lr_list = [None]
         for lr in lr_list:
             model, hyperparams, augment_config = get_experience(exp)
+            model = model.to(device)
             if n_epochs is not None:
                 hyperparams["n_epochs"] = n_epochs
             if lr is not None:
                 logging.warning(f"Forcing lr to {lr}")
                 hyperparams["lr"] = lr
             suffix = f"_lr_{lr:.1E}" if lr is not None else ""
-            model, metrics_dict = train(
-                model,
-                out_dir=ROOT_DIR/f"exp_{exp:04d}{suffix}",
-                augment_config=augment_config,
+            train_folder = ROOT_DIR/f"exp_{exp:04d}{suffix}"
+            save_dict = {
                 **hyperparams,
-            )
+                **augment_config
+            }
+            save_dict.pop("lr_scheduler", None)
+
+            if train_folder.exists():
+                logging.warning(
+                    f"Skipping {train_folder} as it already exists")
+                Dump.save_yaml(save_dict, train_folder/"config.yaml")
+                Dump.save_json(save_dict, train_folder/"config.json")
+            else:
+                Dump.save_yaml(save_dict, train_folder/"config.yaml")
+                Dump.save_json(save_dict, train_folder/"config.json")
+                model, metrics_dict = train(
+                    model,
+                    out_dir=train_folder,
+                    augment_config=augment_config,
+                    device=device,
+                    **hyperparams,
+                )
 
 
 if __name__ == "__main__":
@@ -131,5 +151,7 @@ if __name__ == "__main__":
     parser.add_argument("-e",  "--exp", type=int, nargs="+", default=[0])
     parser.add_argument("-lr",  "--lr", type=float, nargs="+", default=[])
     parser.add_argument("-n",  "--n-epochs", type=int, required=False)
+    parser.add_argument("-d",  "--device", type=str, default=DEVICE)
     args = parser.parse_args()
-    classical_training_loop(args.exp, n_epochs=args.n_epochs, lr_list=args.lr)
+    classical_training_loop(args.exp, n_epochs=args.n_epochs,
+                            lr_list=args.lr, device=args.device)
