@@ -265,7 +265,7 @@ def get_experience(exp):
         lr=1E-4,
         n_epochs=100,
         batch_sizes=(256, 128),
-        lr_scheduler = None,
+        lr_scheduler=None,
         needed_loss_scheduler=False
     )
     if exp == 0:
@@ -326,18 +326,23 @@ def get_experience(exp):
     # LR experiments
     elif exp == 20:
         model = Slim_Convolutional(rnn=False)  # 78%
-        model = torch.load("__dump/exp_0007/best_model.pth", map_location=torch.device('cpu'))
+        model = torch.load("__dump/exp_0007/best_model.pth",
+                           map_location=torch.device('cpu'))
         # model.load_state_dict(a) # START from exp 6 TODO path and device hardcoded...
         hyperparams["n_epochs"] = 100
-        hyperparams["lr"] = 1e-3 # default to 1E-4
+        hyperparams["lr"] = 1e-3  # default to 1E-4
     elif exp == 21:
         model = Slim_Convolutional(rnn=False)
         hyperparams["n_epochs"] = 10
-        hyperparams["lr_scheduler"] = lambda optimizer : torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
+        hyperparams["lr_scheduler_name"] = "ExponentialLR_0.9"
+        hyperparams["lr_scheduler"] = lambda optimizer: torch.optim.lr_scheduler.ExponentialLR(
+            optimizer, gamma=0.9)
     elif exp == 22:
         model = Slim_Convolutional(rnn=False)
         hyperparams["n_epochs"] = 10
-        hyperparams["lr_scheduler"] = lambda optimizer : torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1, patience=2, threshold=1e-4)
+        hyperparams["lr_scheduler_name"] = "Plateau_0.1_2_1e-4"
+        hyperparams["lr_scheduler"] = lambda optimizer: torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, factor=0.1, patience=2, threshold=1e-4)
         hyperparams["needed_loss_scheduler"] = True
 
     return model, hyperparams, augment_config

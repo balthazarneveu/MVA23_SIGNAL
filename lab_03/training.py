@@ -104,7 +104,7 @@ def train(model: torch.nn.Module,
     return model, metrics_dict
 
 
-def classical_training_loop(exp_list, n_epochs=None, lr_list=[]):
+def classical_training_loop(exp_list, n_epochs=None, lr_list=[], device=DEVICE):
     for exp in exp_list:
         from model import get_experience
         if lr_list is None or len(lr_list) == 0:
@@ -118,24 +118,25 @@ def classical_training_loop(exp_list, n_epochs=None, lr_list=[]):
                 hyperparams["lr"] = lr
             suffix = f"_lr_{lr:.1E}" if lr is not None else ""
             train_folder = ROOT_DIR/f"exp_{exp:04d}{suffix}"
+            save_dict = {
+                **hyperparams,
+                **augment_config
+            }
+            save_dict.pop("lr_scheduler", None)
+
             if train_folder.exists():
                 logging.warning(
                     f"Skipping {train_folder} as it already exists")
-                Dump.save_yaml({
-                    **hyperparams,
-                    **augment_config},
-                    train_folder/"config.yaml"
-                )
+                Dump.save_yaml(save_dict, train_folder/"config.yaml")
+                Dump.save_json(save_dict, train_folder/"config.json")
             else:
-                Dump.save_yaml({
-                    **hyperparams,
-                    **augment_config},
-                    train_folder/"config.yaml"
-                )
+                Dump.save_yaml(save_dict, train_folder/"config.yaml")
+                Dump.save_json(save_dict, train_folder/"config.json")
                 model, metrics_dict = train(
                     model,
                     out_dir=train_folder,
                     augment_config=augment_config,
+                    device=device,
                     **hyperparams,
                 )
 
@@ -147,5 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("-e",  "--exp", type=int, nargs="+", default=[0])
     parser.add_argument("-lr",  "--lr", type=float, nargs="+", default=[])
     parser.add_argument("-n",  "--n-epochs", type=int, required=False)
+    parser.add_argument("-d",  "--device", type=str, default=DEVICE)
     args = parser.parse_args()
-    classical_training_loop(args.exp, n_epochs=args.n_epochs, lr_list=args.lr)
+    classical_training_loop(args.exp, n_epochs=args.n_epochs,
+                            lr_list=args.lr, device=args.device)
