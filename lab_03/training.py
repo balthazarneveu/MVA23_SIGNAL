@@ -15,6 +15,7 @@ ROOT_DIR = Path(__file__).parent/"__dump"
 
 def train(model: torch.nn.Module,
           config_dataloader=CONFIG_DATALOADER,
+          augment_config: Optional[dict] = {},
           device: str = "cuda",
           lr: float = 1E-4, n_epochs=5,
           batch_sizes: Optional[Tuple[int, int]] = None,
@@ -24,6 +25,7 @@ def train(model: torch.nn.Module,
         out_dir.mkdir(exist_ok=True, parents=True)
     model = model.to(device)
     config = config_dataloader
+    config[TRAIN] = {**config[TRAIN], **augment_config}
     if batch_sizes is not None:
         config[TRAIN][BATCH_SIZE], config[VALID][BATCH_SIZE] = batch_sizes
     dataloaders = get_dataloaders()
@@ -101,11 +103,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
     exp = args.exp
     from model import get_experience
-    model, hyperparams = get_experience(exp)
+    model, hyperparams, augment_config = get_experience(exp)
     if args.n_epochs is not None:
         hyperparams["n_epochs"] = args.n_epochs
     model, metrics_dict = train(
         model,
         out_dir=ROOT_DIR/f"exp_{args.exp:04d}",
+        augment_config=augment_config,
         **hyperparams,
+
     )

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Tuple, Optional, Dict
 from torch.utils.data import DataLoader, Dataset
 import torch
-
+import logging
 DATA_ROOT = Path(__file__).parent/"data"
 SAMPLE_DATA_PATH = DATA_ROOT/"samples.hdf5"
 TRAIN = "train"
@@ -13,18 +13,27 @@ VALID = "validation"
 PATH = "path"
 BATCH_SIZE = "batch_size"
 SHUFFLE = "shuffle"
+AUGMENT_TRIM = "augment_trim"
+AUGMENT_NOISE = "augment_noise"
+AUGMENT_ROTATE = "augment_rotate"
 
 DEFAULT_BATCH_SIZE = 8
 CONFIG_DATALOADER = {
     TRAIN: {
         PATH: DATA_ROOT/"train.hdf5",
         BATCH_SIZE: DEFAULT_BATCH_SIZE,
-        SHUFFLE: True
+        SHUFFLE: True,
+        AUGMENT_TRIM: False,  # These can be modified
+        AUGMENT_NOISE: 0,
+        AUGMENT_ROTATE: False,
     },
     VALID: {
         PATH: DATA_ROOT/"validation.hdf5",
         BATCH_SIZE: DEFAULT_BATCH_SIZE,
-        SHUFFLE: False
+        SHUFFLE: False,
+        AUGMENT_TRIM: False,
+        AUGMENT_NOISE: 0,
+        AUGMENT_ROTATE: False,
     }
 }
 
@@ -91,7 +100,22 @@ class SignalsDataset(Dataset):
     (similar to [H,W] for images)
     """
 
-    def __init__(self, data_path: Path):
+    def __init__(
+        self,
+        data_path: Path,
+        augment_trim: Optional[bool] = False,
+        augment_noise: Optional[bool] = 0,
+        augment_rotate: Optional[bool] = False
+    ):
+        if augment_trim:
+            logging.warning("ENABLED AUGMENTATION: Trim")
+        self.augment_trim = augment_trim
+        if augment_noise:
+            logging.warning("ENABLED AUGMENTATION: Add noise")
+        self.augment_noise = augment_noise
+        if augment_rotate:
+            logging.warning("ENABLED AUGMENTATION: Rotate")
+        self.augment_rotate = augment_rotate
         signals, _snr, labels_id, _label_dict = get_data(data_path)
         self.signals = signals
         self.labels = labels_id
@@ -100,9 +124,55 @@ class SignalsDataset(Dataset):
         return self.signals.shape[0]
 
     def __getitem__(self, idx: int):
-        signal = torch.FloatTensor(self.signals[idx, :].T)
+        signal = torch.FloatTensor(self.signals[idx, :].T)  # [2, L]
+        if self.augment_trim:
+            start, length = torch.randint(0, signal.shape[1]//2, (2,))
+            length += signal.shape[1]//4
+            signal = signal[:, start:min(start+length, signal.shape[1])]
+            print(signal.shape)
+        if self.augment_rotate:
+            phi = torch.rand(signal.shape[1]) * 5 * torch.pi / 180
+            s = torch.sin(phi)
+            c = torch.cos(phi)
+            rot = torch.stack([torch.stack([c, -s], dim=1),
+                               torch.stack([s, c], dim=1)], dim=1)  # [L, 2, 2]
+            signal = torch.bmm(rot, signal.T.unsqueeze(-1)).squeeze(-1).T
+        if self.augment_noise:
+            signal += torch.randn(signal.shape)*self.augment_noise
         label = torch.LongTensor([self.labels[idx]])
         return signal, label
+
+
+def signals_collate_fn(batch):
+    """
+    Collate function for SignalsDataset that trims signals
+    to the minimum length in the batch.
+
+    Args:
+    batch (list): A list of tuples, where each tuple contains the signal and label.
+
+    Returns:
+    Tensor: A batch of signals, trimmed to the same (minimum) length.
+    Tensor: A batch of labels.
+    """
+    
+    signals, labels = zip(*batch)
+    print([sig.shape for sig in signals])
+
+    # Find the length of the shortest signal in the batch
+    min_length = min(signal.shape[1] for signal in signals)
+    min_length = min_length % 16
+
+    # Trim all signals to the minimum length
+    trimmed_signals = torch.stack(
+        [signal[:, :min_length] for signal in signals])
+    print(trimmed_signals.shape)
+    # Stack the labels into a single tensor
+    labels = torch.stack(labels)
+
+    return trimmed_signals, labels
+
+# Example usage with a DataLoader
 
 
 def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
@@ -120,9 +190,19 @@ def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
     """
     dl_dict = {}
     for mode, config_dict in config_data_paths.items():
-        dataset = SignalsDataset(config_dict[PATH])
-        dl = DataLoader(dataset, shuffle=config_dict[SHUFFLE],
-                        batch_size=config_dict[BATCH_SIZE])
+        print(config_dict)
+        dataset = SignalsDataset(
+            config_dict[PATH],
+            augment_trim=config_dict.get(AUGMENT_TRIM, False),
+            augment_noise=config_dict.get(AUGMENT_NOISE, 0),
+            augment_rotate=config_dict.get(AUGMENT_ROTATE, False),)
+        dl = DataLoader(
+            dataset,
+            shuffle=config_dict[SHUFFLE],
+            batch_size=config_dict[BATCH_SIZE],
+            collate_fn=signals_collate_fn if config_dict.get(
+                AUGMENT_TRIM, False) else None
+        )
         dl_dict[mode] = dl
     return dl_dict
 

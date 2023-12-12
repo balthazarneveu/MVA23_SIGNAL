@@ -1,5 +1,5 @@
 import torch
-
+from data_loader import AUGMENT_TRIM, AUGMENT_NOISE, AUGMENT_ROTATE
 N_CLASSES = 6
 
 
@@ -125,7 +125,8 @@ class Convolutional_baseline(torch.nn.Module):
 
 
 class Slim_Convolutional(torch.nn.Module):
-    def __init__(self, ch_in: int = 2, n_classes: int = N_CLASSES,
+    def __init__(self, ch_in: int = 2,
+                 n_classes: int = N_CLASSES,
                  h_dim=16,
                  h_dim_classifier=128,
                  k_size=5,
@@ -254,6 +255,11 @@ class RnnBaseline(torch.nn.Module):
 
 
 def get_experience(exp):
+    augment_config = {
+        AUGMENT_TRIM: False,
+        AUGMENT_NOISE: 0,
+        AUGMENT_ROTATE: False
+    }
     hyperparams = dict(
         lr=1E-4,
         n_epochs=100,
@@ -280,5 +286,13 @@ def get_experience(exp):
     elif exp == 6:
         model = Slim_Convolutional(rnn=False)  # 73.3%
         hyperparams["n_epochs"] = 500
+    elif exp == 7:
+        model = Slim_Convolutional(rnn=False)  # ?
+        hyperparams["n_epochs"] = 500
+        augment_config = {
+            AUGMENT_TRIM: True,
+            AUGMENT_NOISE: 0,
+            AUGMENT_ROTATE: True
+        }
 
-    return model, hyperparams
+    return model, hyperparams, augment_config
