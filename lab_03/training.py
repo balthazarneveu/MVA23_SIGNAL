@@ -10,7 +10,8 @@ from typing import Tuple, Optional, Callable
 from dump import Dump
 from pathlib import Path
 import logging
-ROOT_DIR = Path(__file__).parent/"__dump"
+from properties import ROOT_DIR
+
 DEVICE = "cpu"
 
 

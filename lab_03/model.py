@@ -1,5 +1,6 @@
 import torch
 from data_loader import AUGMENT_TRIM, AUGMENT_NOISE, AUGMENT_ROTATE
+from properties import ROOT_DIR
 N_CLASSES = 6
 
 
@@ -326,7 +327,7 @@ def get_experience(exp):
     # LR experiments
     elif exp == 20:
         model = Slim_Convolutional(rnn=False)  # 78%
-        model = torch.load("__dump/exp_0007/best_model.pth",
+        model = torch.load(ROOT_DIR/"exp_0007/best_model.pth",
                            map_location=torch.device('cpu'))
         # model.load_state_dict(a) # START from exp 6 TODO path and device hardcoded...
         hyperparams["n_epochs"] = 100

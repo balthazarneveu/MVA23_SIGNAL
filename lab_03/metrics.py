@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import Dict
-from training import ROOT_DIR
+from properties import ROOT_DIR
 from dump import Dump
 from typing import List, Optional
 from pathlib import Path
