@@ -107,12 +107,27 @@ def classical_training_loop(exp_list, n_epochs=None, lr_list=[]):
                 logging.warning(f"Forcing lr to {lr}")
                 hyperparams["lr"] = lr
             suffix = f"_lr_{lr:.1E}" if lr is not None else ""
-            model, metrics_dict = train(
-                model,
-                out_dir=ROOT_DIR/f"exp_{exp:04d}{suffix}",
-                augment_config=augment_config,
-                **hyperparams,
-            )
+            train_folder = ROOT_DIR/f"exp_{exp:04d}{suffix}"
+            if train_folder.exists():
+                logging.warning(
+                    f"Skipping {train_folder} as it already exists")
+                Dump.save_yaml({
+                    **hyperparams,
+                    **augment_config},
+                    train_folder/"config.yaml"
+                )
+            else:
+                Dump.save_yaml({
+                    **hyperparams,
+                    **augment_config},
+                    train_folder/"config.yaml"
+                )
+                model, metrics_dict = train(
+                    model,
+                    out_dir=train_folder,
+                    augment_config=augment_config,
+                    **hyperparams,
+                )
 
 
 if __name__ == "__main__":

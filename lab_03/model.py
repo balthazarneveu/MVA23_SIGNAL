@@ -317,7 +317,7 @@ def get_experience(exp):
         augment_config[AUGMENT_ROTATE] = True
         augment_config[AUGMENT_TRIM] = True
         augment_config[AUGMENT_NOISE] = 0.1
-    elif exp == 19: # No augmentation
+    elif exp == 19:  # No augmentation
         model = Slim_Convolutional(rnn=False)  # ?
         hyperparams["n_epochs"] = 100
         hyperparams["batch_sizes"] = (512, 1024)
