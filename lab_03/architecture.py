@@ -1,5 +1,5 @@
 import torch
-from typing import Optional
+from typing import Optional, List
 from itertools import product
 from properties import N_CLASSES
 import logging
@@ -85,35 +85,38 @@ class FlexiConv(torch.nn.Module):
     def __init__(
         self,
         dim_in: Optional[int] = 2,
+        k_size: Optional[List[int]] = [3],
         h_dim: Optional[int] = 32,
         h_classifier: Optional[int] = 512,
         n_classes: Optional[int] = N_CLASSES,
     ):
+        logging.warning(
+            f"FLEXICONV {dim_in=} {k_size=} {h_dim=} {h_classifier=} {n_classes=}")
         super().__init__()
         # -> C=2 , L=2048 (/1)
         self.block1 = BuildingBlockConvolutions(
-            dim_in, ch_inner=h_dim, ch_out=h_dim, kernel_sizes=[3])
+            dim_in, ch_inner=h_dim, ch_out=h_dim, kernel_sizes=k_size)
 
         # -> C=32 (*1), L=1024 (/2)
         self.block2 = BuildingBlockConvolutions(
-            h_dim, ch_inner=h_dim, ch_out=h_dim*2, kernel_sizes=[3])
+            h_dim, ch_inner=h_dim, ch_out=h_dim*2, kernel_sizes=k_size)
 
         # -> C=64 (*2), L=512  (/4)
         self.block3 = BuildingBlockConvolutions(
-            h_dim*2, ch_inner=h_dim*4, ch_out=h_dim*4, kernel_sizes=[3])
+            h_dim*2, ch_inner=h_dim*4, ch_out=h_dim*4, kernel_sizes=k_size)
 
         # -> C=128 (*4), L=256 (/8)
         self.block4 = BuildingBlockConvolutions(
-            h_dim*4, ch_inner=h_dim*4, ch_out=h_dim*8, kernel_sizes=[3])
+            h_dim*4, ch_inner=h_dim*4, ch_out=h_dim*8, kernel_sizes=k_size)
 
         # -> C=256 (*8), L=128 (/16)
         self.block5 = BuildingBlockConvolutions(
-            h_dim*8, ch_inner=h_dim*8, ch_out=h_dim*16, kernel_sizes=[3], downsample=4)
+            h_dim*8, ch_inner=h_dim*8, ch_out=h_dim*16, kernel_sizes=k_size, downsample=4)
 
         # -> C=256 (*16), L=32 (/64)
         h_out = h_dim*16
         self.block6 = BuildingBlockConvolutions(
-            h_dim*16, ch_inner=h_dim*16, ch_out=h_out, kernel_sizes=[3], downsample=2)
+            h_dim*16, ch_inner=h_dim*16, ch_out=h_out, kernel_sizes=k_size, downsample=2)
 
         # -> C=512 (*16), L=16 (/128)
 

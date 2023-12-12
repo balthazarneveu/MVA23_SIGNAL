@@ -291,7 +291,7 @@ def get_experience(exp):
         model = Slim_Convolutional(rnn=False)  # 73.3%
         hyperparams["n_epochs"] = 500
     elif exp == 7:
-        model = Slim_Convolutional(rnn=False)  # ?*
+        model = Slim_Convolutional(rnn=False)  # 78.2%
         hyperparams["n_epochs"] = 1000
     # AUGMENTATION EXPERIMENTS
     elif exp == 8:
@@ -390,4 +390,43 @@ def get_experience(exp):
         hyperparams["batch_sizes"] = (512, 1024)
         hyperparams["annotation"] = "Flexconv H=16 train on HighSNR"
         augment_config[SNR_FILTER] = [10, 20, 30]
+    elif exp == 38:
+        # LR 1E-2 starts 17% NOK
+        # LR 1E-3 starts 37.6% ... epoch 10 -> 52% epoch 13 -> 58%
+        model = FlexiConv(h_dim=8, k_size=[5])
+        hyperparams["n_epochs"] = 30
+        hyperparams["lr"] = 1E-3
+        hyperparams["batch_sizes"] = (512, 1024)
+        hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=5"
+    elif exp == 39:
+        # LR 1E-2 starts 17% NOK, 5E-3 NOK, 2E-3 NOK
+        # LR 1E-3 starts 28.8% ... epoch 10 -> 52% epoch 20 -> 57%
+        model = FlexiConv(h_dim=8, k_size=[7])
+        hyperparams["n_epochs"] = 30
+        hyperparams["lr"] = 1E-3
+        hyperparams["batch_sizes"] = (512, 1024)
+        hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=7"
+    elif exp == 40:
+        # LR 1E-3 starts ?
+        model = FlexiConv(h_dim=8, k_size=[7])
+        hyperparams["n_epochs"] = 30
+        hyperparams["lr"] = 1E-3
+        hyperparams["batch_sizes"] = (512, 1024)
+        hyperparams["annotation"] = "Flexconv H=16 Large Kernels K=5"
+    elif exp == 41:
+        # LR 1E-3 starts ?
+        model = FlexiConv(h_dim=8, k_size=[7])
+        hyperparams["n_epochs"] = 50
+        hyperparams["lr"] = 1E-3
+        hyperparams["batch_sizes"] = (512, 1024)
+        hyperparams["annotation"] = "Flexconv H=16 Large Kernels K=5"
+        hyperparams["lr_scheduler_name"] = "Plateau_0.1_2_1e-4"
+        hyperparams["lr_scheduler"] = lambda optimizer: torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, factor=0.1, patience=2, threshold=1e-4)
+        hyperparams["needed_loss_scheduler"] = True
+    #     model = Slim_Convolutional(rnn=False)  # 78.2%
+    #     hyperparams["n_epochs"] = 1000
+    # elif exp == 40:
+    #     model = Slim_Convolutional(rnn=False)  # 78.2%
+    #     hyperparams["n_epochs"] = 1000
     return model, hyperparams, augment_config
