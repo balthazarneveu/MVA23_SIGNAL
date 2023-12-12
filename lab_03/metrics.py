@@ -3,6 +3,8 @@ import numpy as np
 from typing import Dict
 from training import ROOT_DIR
 from dump import Dump
+from typing import List, Optional
+from pathlib import Path
 
 
 def plot_results(metrics_dict_comparison):
@@ -17,7 +19,8 @@ def plot_results(metrics_dict_comparison):
         epoch_steps = np.linspace(epoch_length, len(
             training_losses), len(valid_losses))
         # axs[0].plot(training_losses, ".", alpha=0.01, label=f"training loss {exp_name}")
-        axs[0].plot(epoch_steps, valid_losses,  "-o", label=f"validation loss {exp_name}")
+        axs[0].plot(epoch_steps, valid_losses,  "-o",
+                    label=f"validation loss {exp_name}")
         axs[1].plot(epoch_steps, 100*np.array(valid_accuracies),
                     "-", label=f"validation accuracy {exp_name}")
     axs[0].set_xlabel("Step")
@@ -36,12 +39,36 @@ def plot_results(metrics_dict_comparison):
     plt.show()
 
 
-if __name__ == "__main__":
-    exp_dirs = ROOT_DIR.glob("*")
+def results_comparisons(all_experiments_path: List[Path], selection: List[str] = []):
     metrics_dict_comparison = {}
-    for exp_dir in sorted(list(exp_dirs)):
+    for exp_dir in all_experiments_path:
         exp_name = exp_dir.name
+        if len(selection) > 0:
+            selected = False
+            for sel in selection:
+                if sel in exp_name:
+                    selected = True
+                    break
+        else:
+            selected = True
+        if not selected:
+            continue
+
         checkpoint_file = exp_dir/"metrics.pkl"
         if checkpoint_file.exists():
-            metrics_dict_comparison[exp_name] = Dump.load_pickle(checkpoint_file)
+            metrics_dict_comparison[exp_name] = Dump.load_pickle(
+                checkpoint_file)
     plot_results(metrics_dict_comparison)
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-r",  "--root-dir", type=str, default=str(ROOT_DIR))
+    parser.add_argument("-e",  "--selection", type=str, nargs="+", default=[])
+    args = parser.parse_args()
+
+    exp_dirs = Path(args.root_dir).glob("*")
+    all_experiments_path = sorted(list(exp_dirs))
+    # selection = [f"{i:02d}" for i in [8, 9]]
+    results_comparisons(all_experiments_path, args.selection)

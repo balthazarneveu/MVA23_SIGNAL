@@ -134,18 +134,15 @@ class SignalsDataset(Dataset):
             signal = signal[:, start:min(start+length, signal.shape[1])]
             # print(signal.shape)
         if self.augment_rotate:
-            # TODO: FIX THIS WAY TO MANY ANGLES
             angle_deg = torch.rand(1) * 360.
             phi = torch.deg2rad(angle_deg)
             s = torch.sin(phi)
             c = torch.cos(phi)
-            # rot = torch.stack([torch.stack([c, -s], dim=1),
-            #                    torch.stack([s, c], dim=1)], dim=1)  # [L, 2, 2]
-
             rot = torch.Tensor([[c, -s], [s, c]])
             if self.debug_augmentation_plot:
                 trim_plot = 200
-                plt.plot(signal[0, :trim_plot], signal[1, :trim_plot], ".", label="original")
+                plt.plot(signal[0, :trim_plot],
+                         signal[1, :trim_plot], ".", label="original")
                 signal_rot = torch.mm(rot, signal)
                 plt.plot(signal_rot[0, :trim_plot],
                          signal_rot[1, :trim_plot], "+", label="augmented")
@@ -156,7 +153,7 @@ class SignalsDataset(Dataset):
                 plt.axis("equal")
                 plt.grid()
                 plt.title(
-                    f'Signal augmentation by rotation {float(angle_deg):.1f}°')
+                    f'Signal augmentation by rotation {float(angle_deg):.1f}° - first {trim_plot} samples')
                 plt.show()
 
             signal = torch.mm(rot, signal)
@@ -164,7 +161,8 @@ class SignalsDataset(Dataset):
             # signal = torch.bmm(rot, signal.T.unsqueeze(-1)).squeeze(-1).T
         if self.augment_noise:
             # AWGN (additive white gaussian noise)
-            # with a standard deviation sampled uniformly from [0, augment_noise]
+            # with a standard deviation sampled 
+            # uniformly from [0, augment_noise]
             # Each signal has a different noise level
             std_dev = torch.rand(1)*self.augment_noise
             std_dev = std_dev.repeat(2, 1)
