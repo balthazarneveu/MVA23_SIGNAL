@@ -226,10 +226,34 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
         hyperparams["n_epochs"] = 500
         hyperparams["lr"] = 1E-3
         hyperparams["annotation"] = "Fat Convolutional h=32, h_c=256, k=7, tpool=8"
-    elif exp == 62:  # >78.35%
+    elif exp == 62:  # >83.4% at 200 epochs - OVervfits at 150
         model = FlexiConv(h_dim=8, k_size=[9])
         hyperparams["n_epochs"] = 500
         hyperparams["lr"] = 5E-4
         hyperparams["batch_sizes"] = (512, 1024)
         hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=9"
+    elif exp == 63:  # 85.1%
+        model = torch.load(ROOT_DIR/"exp_0062/best_model.pth", map_location=torch.device('cpu'))
+        hyperparams["n_epochs"] = 50
+        hyperparams["lr"] = 5E-4
+        hyperparams["batch_sizes"] = (512, 1024)
+        hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=9"
+        augment_config[AUGMENT_ROTATE] = True
+        augment_config[AUGMENT_NOISE] = 0.01
+    elif exp == 64:  # 84.8%
+        model = torch.load(ROOT_DIR/"exp_0062/best_model.pth", map_location=torch.device('cpu'))
+        hyperparams["n_epochs"] = 50
+        hyperparams["lr"] = 1E-3
+        hyperparams["batch_sizes"] = (512, 1024)
+        hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=9"
+        augment_config[AUGMENT_ROTATE] = True
+        augment_config[AUGMENT_NOISE] = 0.01
+    elif exp == 65:  # ?
+        model = torch.load(ROOT_DIR/"exp_0062/best_model.pth", map_location=torch.device('cpu'))
+        hyperparams["n_epochs"] = 50
+        hyperparams["lr"] = 2E-4
+        hyperparams["batch_sizes"] = (512, 1024)
+        hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=9"
+        augment_config[AUGMENT_ROTATE] = True
+        augment_config[AUGMENT_NOISE] = 0.01
     return model, hyperparams, augment_config
