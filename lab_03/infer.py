@@ -1,8 +1,12 @@
 import torch
 import numpy as np
+from typing import Optional
 
 
-def infer(model, dataloader, device, criterion=torch.nn.CrossEntropyLoss()):
+def infer(
+        model, dataloader, device,
+        criterion=torch.nn.CrossEntropyLoss(),
+        confusion_matrix: Optional[bool]=False):
     """Evaluate accuracy on the validation set"""
     model.eval()
     valid_loss = []

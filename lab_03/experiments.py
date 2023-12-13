@@ -186,8 +186,9 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
         hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=9"
     elif exp == 43:
         model = FlexiConv(h_dim=8, k_size=[9])
-        hyperparams["n_epochs"] = 1000
-        hyperparams["lr"] = 5E-4
+        model = torch.load(ROOT_DIR/"exp_0042/best_model.pth")
+        hyperparams["n_epochs"] = 300
+        hyperparams["lr"] = 1E-4
         hyperparams["batch_sizes"] = (512, 1024)
         hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=9"
         hyperparams["lr_scheduler_name"] = "Plateau_0.5_2"
@@ -196,7 +197,7 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
             optimizer, factor=0.5, patience=2, threshold=2e-4)
         hyperparams["needed_loss_scheduler"] = True
 
-    elif exp == 50:
+    elif exp == 50:  # 30% @epoch 72
         model = FlexiConv(h_dim=8, k_size=[9], augmented_inputs=True)
         hyperparams["n_epochs"] = 100
         hyperparams["lr"] = 1E-3
@@ -207,5 +208,28 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
             torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, factor=0.5, patience=2, threshold=2e-4)
         hyperparams["needed_loss_scheduler"] = True
-
+    elif exp == 60:  # ? 70% at 38 epochs
+        hyperparams["batch_sizes"] = (1024, 1024)
+        model = Slim_Convolutional(rnn=False)
+        hyperparams["n_epochs"] = 500
+        hyperparams["lr"] = 1E-3
+        hyperparams["annotation"] = "Slim Convolutional h=16, h_c=2128 k=5, tpool=8"
+    elif exp == 61:  # 60% at 22 epochs
+        model = Slim_Convolutional(
+            rnn=False,
+            h_dim=32,  # 16 DEFAULT
+            h_dim_classifier=256,  # 128 DEFAULT
+            k_size=7,  # 5 DEFAULT
+            pool_temporal=8
+        )
+        hyperparams["batch_sizes"] = (1024, 1024)
+        hyperparams["n_epochs"] = 500
+        hyperparams["lr"] = 1E-3
+        hyperparams["annotation"] = "Fat Convolutional h=32, h_c=256, k=7, tpool=8"
+    elif exp == 62:  # >78.35%
+        model = FlexiConv(h_dim=8, k_size=[9])
+        hyperparams["n_epochs"] = 500
+        hyperparams["lr"] = 5E-4
+        hyperparams["batch_sizes"] = (512, 1024)
+        hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=9"
     return model, hyperparams, augment_config
