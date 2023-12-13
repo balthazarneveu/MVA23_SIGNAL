@@ -164,14 +164,10 @@ def snr_based_metrics(metrics_dict_comparison: dict):
                 ax.axis('off')
 
         # Adjust layout for better visualization
-        plt.title(f"Confusion matrix {exp_name}")
+        plt.suptitle(f"Confusion matrix {exp_name}")
         plt.tight_layout()
         plt.show()
 
-        # disp = ConfusionMatrixDisplay(conf_matrix)
-        # disp.plot()
-        # plt.title(f"prediction matrix for snr = {snrs[i]}")
-        # plt.show()
 
 
 

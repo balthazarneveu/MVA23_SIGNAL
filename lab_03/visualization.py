@@ -29,9 +29,11 @@ def visualize_signals(data_in: list = None,
     plt.scatter(signals[idx, :, 0], signals[idx, :, 1],
                 label="complex", alpha=0.5)
     plt.title(f'Index {idx} - {label_dict.get(labels_id[idx], "unknown")}'
-              + f'SNR={snr[idx]} db')
+              + f' SNR={snr[idx]} db')
     plt.legend()
     plt.xlim(-3, 3)
     plt.ylim(-3, 3)
+    plt.xlabel("real")
+    plt.ylabel("imaginary")
     plt.grid()
     plt.show()
