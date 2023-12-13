@@ -6,6 +6,7 @@ from dump import Dump
 from typing import List, Optional
 from pathlib import Path
 import torch
+from sklearn.metrics import ConfusionMatrixDisplay
 from data_loader import get_dataloaders, TRAIN, VALID, CONFIG_DATALOADER, SNR_FILTER
 from infer import infer
 num_samples = len(get_dataloaders()[TRAIN].dataset)
@@ -73,9 +74,11 @@ def plot_results(metrics_dict_comparison):
 def snr_based_metrics(metrics_dict_comparison: dict):
     colors = ["r"]
     # fig, axs = plt.subplots(ncols=2, figsize=(16, 8))
+    conf_matrices = {}
     for id_exp,  (exp_name, metrics_dict) in enumerate(metrics_dict_comparison.items()):
         extra = ""
         batch_sizes = metrics_dict["config"].get("batch_sizes", None)
+        conf_matrices[id_exp] = []
 
         if batch_sizes is not None:
             normalization = num_samples/int(batch_sizes[0])
@@ -102,15 +105,17 @@ def snr_based_metrics(metrics_dict_comparison: dict):
         if annotation is not None:
             label_name = annotation
         assert metrics_dict["config"]["model_path"].exists()
-        model = torch.load(metrics_dict["config"]["model_path"])
+        model = torch.load(metrics_dict["config"]["model_path"], map_location=torch.device(device))
         from copy import deepcopy
         config_data_paths = deepcopy(CONFIG_DATALOADER)
         perf_regarding_snr = {}
-        for snr in [0, 10, 20, 30]:
+        snrs = [0, 10, 20, 30]
+        for snr in snrs:
             config_data_paths[VALID][SNR_FILTER] = [snr]
             dl = get_dataloaders(config_data_paths=config_data_paths)
-            accuracy, valid_loss = infer(model, dl[VALID], device=device)
+            accuracy, valid_loss, conf_matrix = infer(model, dl[VALID], device=device, has_confusion_matrix=True)
             perf_regarding_snr[snr] = accuracy
+            conf_matrices[id_exp].append(conf_matrix)
         avg_acc = np.mean(list(perf_regarding_snr.values()))
         w = 0.5
         plt.bar([key+id_exp*w for key in perf_regarding_snr.keys()],
@@ -121,6 +126,53 @@ def snr_based_metrics(metrics_dict_comparison: dict):
     plt.legend()
     plt.grid()
     plt.show()
+    for id_exp,  (exp_name, metrics_dict) in enumerate(metrics_dict_comparison.items()) :
+        num_matrices = len(conf_matrices[id_exp])
+        n_rows = int(np.sqrt(num_matrices))
+        n_cols = int(np.ceil(num_matrices / n_rows))
+
+        # Create subplots
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(5, 5))
+        # Flatten the axes if there's only one row or one column
+        if num_matrices == 1:
+            axes = axes.reshape(1, 1)
+        elif n_rows == 1:
+            axes = axes.reshape(1, -1)
+        elif n_cols == 1:
+            axes = axes.reshape(-1, 1)
+
+        for i, ax in enumerate(axes.flatten()):
+            if i < num_matrices:
+                # Plot confusion matrix
+                cm = conf_matrices[id_exp][i]
+                classes = {0: 'N-QAM16', 1: 'N-PSK8', 2: 'N-QPSK', 3: 'W-QAM16', 4: 'W-PSK8-V1', 5: 'W-PSK8-V2'}.values()
+                im = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+                ax.figure.colorbar(im, ax=ax)
+                
+                # Label axes
+                ax.set(xticks=np.arange(len(classes)),
+                    yticks=np.arange(len(classes)),
+                    xticklabels=classes, yticklabels=classes,
+                    title=f'Confusion Matrix snr {snrs[i]}',
+                    ylabel='True label',
+                    xlabel='Predicted label')
+                plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+                        rotation_mode="anchor")
+
+            # Remove empty subplots
+            else:
+                ax.axis('off')
+
+        # Adjust layout for better visualization
+        plt.title(f"Confusion matrix {exp_name}")
+        plt.tight_layout()
+        plt.show()
+
+        # disp = ConfusionMatrixDisplay(conf_matrix)
+        # disp.plot()
+        # plt.title(f"prediction matrix for snr = {snrs[i]}")
+        # plt.show()
+
 
 
 def results_comparisons(all_experiments_path: List[Path], selection: List[str] = [], evolution: bool = True):
