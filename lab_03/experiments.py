@@ -233,27 +233,30 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
         hyperparams["batch_sizes"] = (512, 1024)
         hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=9"
     elif exp == 63:  # 85.1%
-        model = torch.load(ROOT_DIR/"exp_0062/best_model.pth", map_location=torch.device('cpu'))
+        model = torch.load(ROOT_DIR/"exp_0062/best_model.pth",
+                           map_location=torch.device('cpu'))
         hyperparams["n_epochs"] = 50
         hyperparams["lr"] = 5E-4
         hyperparams["batch_sizes"] = (512, 1024)
-        hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=9"
+        hyperparams["annotation"] = "Fine Tune ! Flexconv H=8 Large Kernels K=9"
         augment_config[AUGMENT_ROTATE] = True
         augment_config[AUGMENT_NOISE] = 0.01
     elif exp == 64:  # 84.8%
-        model = torch.load(ROOT_DIR/"exp_0062/best_model.pth", map_location=torch.device('cpu'))
+        model = torch.load(ROOT_DIR/"exp_0062/best_model.pth",
+                           map_location=torch.device('cpu'))
         hyperparams["n_epochs"] = 50
         hyperparams["lr"] = 1E-3
         hyperparams["batch_sizes"] = (512, 1024)
-        hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=9"
+        hyperparams["annotation"] = "Fine Tune ! Flexconv H=8 Large Kernels K=9"
         augment_config[AUGMENT_ROTATE] = True
         augment_config[AUGMENT_NOISE] = 0.01
-    elif exp == 65:  # ?
-        model = torch.load(ROOT_DIR/"exp_0062/best_model.pth", map_location=torch.device('cpu'))
+    elif exp == 65:  # 85.2%
+        model = torch.load(ROOT_DIR/"exp_0062/best_model.pth",
+                           map_location=torch.device('cpu'))
         hyperparams["n_epochs"] = 50
         hyperparams["lr"] = 2E-4
         hyperparams["batch_sizes"] = (512, 1024)
-        hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=9"
+        hyperparams["annotation"] = "Fine Tune ! Flexconv H=8 Large Kernels K=9"
         augment_config[AUGMENT_ROTATE] = True
         augment_config[AUGMENT_NOISE] = 0.01
     return model, hyperparams, augment_config
