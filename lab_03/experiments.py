@@ -35,8 +35,10 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
         )
     elif exp == 3:
         model = RnnBaseline(bidirectional=False, h_dim=8)  # 20% h_dim=8
+        # hyperparams["annotation"] = "RNN classifier"
     elif exp == 4:
         model = RnnBaseline(bidirectional=True, h_dim=16)
+        hyperparams["annotation"] = "RNN classifier"
     elif exp == 5:
         model = Convolutional_baseline(rnn=True)  # 68.1%
         hyperparams["n_epochs"] = 500
