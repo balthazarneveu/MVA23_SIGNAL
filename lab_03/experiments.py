@@ -250,7 +250,7 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
         hyperparams["annotation"] = "Fine Tune ! Flexconv H=8 Large Kernels K=9"
         augment_config[AUGMENT_ROTATE] = True
         augment_config[AUGMENT_NOISE] = 0.01
-    elif exp == 65:  # 85.2%
+    elif exp == 65:  # 85.18%
         model = torch.load(ROOT_DIR/"exp_0062/best_model.pth",
                            map_location=torch.device('cpu'))
         hyperparams["n_epochs"] = 50
@@ -259,4 +259,21 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
         hyperparams["annotation"] = "Fine Tune ! Flexconv H=8 Large Kernels K=9"
         augment_config[AUGMENT_ROTATE] = True
         augment_config[AUGMENT_NOISE] = 0.01
+    elif exp == 66:  # 85.24%
+        model = torch.load(ROOT_DIR/"exp_0062/best_model.pth",
+                           map_location=torch.device('cpu'))
+        hyperparams["n_epochs"] = 50
+        hyperparams["lr"] = 5E-4
+        hyperparams["batch_sizes"] = (512, 1024)
+        hyperparams["annotation"] = "Fine Tune ! Flexconv H=8 Large Kernels K=9"
+        augment_config[AUGMENT_ROTATE] = True
+    elif exp == 67:  # 85%
+        model = torch.load(ROOT_DIR/"exp_0062/best_model.pth",
+                           map_location=torch.device('cpu'))
+        hyperparams["n_epochs"] = 50
+        hyperparams["lr"] = 5E-4
+        hyperparams["batch_sizes"] = (512, 1024)
+        hyperparams["annotation"] = "Fine Tune ! Flexconv H=8 Large Kernels K=9"
+        augment_config[AUGMENT_TRIM] = True
+        augment_config[AUGMENT_ROTATE] = True
     return model, hyperparams, augment_config

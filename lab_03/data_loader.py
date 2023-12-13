@@ -142,12 +142,18 @@ class SignalsDataset(Dataset):
 
     def __getitem__(self, idx: int):
         signal = torch.FloatTensor(self.signals[idx, :].T)  # [2, L]
+
+        # AUGMENTATIONS DEFINITIONS
         if self.augment_trim:
-            start, length = torch.randint(0, signal.shape[1]//2, (2,))
-            length += signal.shape[1]//2
+            # AUGMENT: Trim
+            # Trim start of sequence between 0 and  100
+            start = torch.randint(0, 100, (1,))
+            length = int((signal.shape[1]//2) +
+                         abs((signal.shape[1])/4 + signal.shape[1]/4 * torch.randn((1,)))
+                         )
             signal = signal[:, start:min(start+length, signal.shape[1])]
-            # print(signal.shape)
         if self.augment_rotate:
+            # AUGMENT: Rotation
             angle_deg = torch.rand(1) * 360.
             phi = torch.deg2rad(angle_deg)
             s = torch.sin(phi)
@@ -171,9 +177,8 @@ class SignalsDataset(Dataset):
                 plt.show()
 
             signal = torch.mm(rot, signal)
-
-            # signal = torch.bmm(rot, signal.T.unsqueeze(-1)).squeeze(-1).T
         if self.augment_noise:
+            # AUGMENT: Add noise
             # AWGN (additive white gaussian noise)
             # with a standard deviation sampled
             # uniformly from [0, augment_noise]
@@ -185,9 +190,9 @@ class SignalsDataset(Dataset):
         return signal, label
 
 
-def signals_collate_fn(batch):
-    """
-    Collate function for SignalsDataset that pads signals to a fixed length of 2048.
+def signals_collate_pad_2048_fn(batch):
+    """Collate function for SignalsDataset that pads signals 
+    to a fixed length of 2048.
 
     Args:
     batch (list): A list of tuples, where each tuple contains the signal and label.
@@ -210,34 +215,32 @@ def signals_collate_fn(batch):
 
     return padded_signals, labels
 
-# def signals_collate_fn(batch):
-#     """
-#     Collate function for SignalsDataset that trims signals
-#     to the minimum length in the batch.
 
-#     Args:
-#     batch (list): A list of tuples, where each tuple contains the signal and label.
+def signals_collate_fn(batch) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Collate function for SignalsDataset = 
+    trims signals to the minimum length in the batch.
 
-#     Returns:
-#     Tensor: A batch of signals, trimmed to the same (minimum) length.
-#     Tensor: A batch of labels.
-#     """
+    Args:
+    batch (list): A list of tuples, where each tuple contains the signal and label.
 
-#     signals, labels = zip(*batch)
-#     # print([sig.shape for sig in signals])
+    Returns:
+    - Tensor: A batch of signals, trimmed to the same (minimum) length.
+    - Tensor: A batch of labels.
+    """
 
-#     # Find the length of the shortest signal in the batch
-#     min_length = min(signal.shape[1] for signal in signals)
-#     min_length = min_length % 16
+    signals, labels = zip(*batch)
 
-#     # Trim all signals to the minimum length
-#     trimmed_signals = torch.stack(
-#         [signal[:, :min_length] for signal in signals])
-#     # print(trimmed_signals.shape)
-#     # Stack the labels into a single tensor
-#     labels = torch.stack(labels)
+    # Find the length of the shortest signal in the batch
+    min_length = min(signal.shape[1] for signal in signals)
+    min_length = min_length-(min_length % 16) # Get a multiple of 16
 
-#     return trimmed_signals, labels
+    # Trim all signals to the minimum length
+    trimmed_signals = torch.stack(
+        [signal[:, :min_length] for signal in signals], axis=0)
+    # Stack the labels into a single tensor
+    labels = torch.stack(labels)
+
+    return trimmed_signals, labels
 
 
 def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
@@ -277,7 +280,8 @@ def get_dataloaders(config_data_paths: dict = CONFIG_DATALOADER,
 if __name__ == '__main__':
     from copy import deepcopy
     config_data_paths = deepcopy(CONFIG_DATALOADER)
-    config_data_paths[TRAIN][SNR_FILTER] = [0,] #[10, 20, 30]  # Select some SNR
+    config_data_paths[TRAIN][SNR_FILTER] = [
+        0,]  # [10, 20, 30]  # Select some SNR
     dl_dict = get_dataloaders(config_data_paths)
     print(len(dl_dict[TRAIN].dataset))
     batch_signal, batch_labels = next(iter(dl_dict[TRAIN]))
