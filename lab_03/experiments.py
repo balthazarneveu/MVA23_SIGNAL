@@ -278,4 +278,14 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
         hyperparams["annotation"] = "Fine Tune ! Flexconv H=8 Large Kernels K=9"
         augment_config[AUGMENT_TRIM] = True
         augment_config[AUGMENT_ROTATE] = True
+    elif exp == 70:  # The last attempt
+        model = FlexiConv(h_dim=8, k_size=[9])
+        hyperparams["n_epochs"] = 500
+        hyperparams["lr"] = 5E-4
+        hyperparams["batch_sizes"] = (512, 1024)
+        hyperparams["annotation"] = "Flexconv H=8 Large Kernels K=9"
+        augment_config[AUGMENT_TRIM] = True
+        augment_config[AUGMENT_ROTATE] = True
+        augment_config[AUGMENT_NOISE] = 0.001
+
     return model, hyperparams, augment_config
