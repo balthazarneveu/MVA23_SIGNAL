@@ -5,6 +5,7 @@ import torch
 # except Exception as exc:
 from tqdm import tqdm
 from data_loader import TRAIN, VALID, BATCH_SIZE, get_dataloaders, CONFIG_DATALOADER
+from infer import infer
 import numpy as np
 from typing import Tuple, Optional, Callable
 from dump import Dump
@@ -69,27 +70,10 @@ def train(model: torch.nn.Module,
             scheduler.step(training_loss)
         elif lr_scheduler is not None:
             scheduler.step()
-        # Evaluate accuracy on the validation set
-        model.eval()
-        valid_loss = []
-        correct_detection = []
-        for signal, labels in dataloaders[VALID]:
-            with torch.no_grad():
-                signal = signal.to(device)
-                labels = labels.to(device)
-                prediction = model(signal)
-                proba = torch.nn.Softmax()(prediction)
-                class_prediction = torch.argmax(proba, axis=1)
-                # print(class_prediction.shape, labels.shape)
-                correct_predictions = (
-                    class_prediction == labels[:, 0]).detach().cpu()
-                correct_detection.extend(correct_predictions)
-                # print(correct_detection)
-                valid_loss_batched = criterion(prediction, labels[:, 0])
-            valid_loss.append(valid_loss_batched.cpu())
-        accuracy = np.array(correct_detection).mean()
+
+        accuracy, valid_loss = infer(
+            model, dataloaders[VALID], criterion=torch.nn.CrossEntropyLoss())
         valid_accuracies.append(accuracy)
-        valid_loss = np.array(valid_loss).mean()
         valid_losses.append(valid_loss)
         print(
             f"{epoch=} | lr={float(optimizer.param_groups[0]['lr']):.2e} | {training_loss=:.3f} | {valid_loss=:.3} | {accuracy:.2%}")
