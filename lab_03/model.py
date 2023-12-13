@@ -271,6 +271,7 @@ def get_experience(exp):
     )
     if exp == 0:
         model = VanillaClassifier()  # 40%
+        hyperparams["annotation"] = "Vanilla classifier"
     elif exp == 1:
         model = Convolutional_baseline(pool_temporal=8)  # 49%
     elif exp == 2:

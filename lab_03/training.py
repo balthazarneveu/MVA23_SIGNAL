@@ -72,7 +72,8 @@ def train(model: torch.nn.Module,
             scheduler.step()
 
         accuracy, valid_loss = infer(
-            model, dataloaders[VALID], criterion=torch.nn.CrossEntropyLoss())
+            model, dataloaders[VALID],
+            device, criterion=torch.nn.CrossEntropyLoss())
         valid_accuracies.append(accuracy)
         valid_losses.append(valid_loss)
         print(
