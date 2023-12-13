@@ -116,10 +116,11 @@ def snr_based_metrics(metrics_dict_comparison: dict):
             accuracy, valid_loss, conf_matrix = infer(model, dl[VALID], device=device, has_confusion_matrix=True)
             perf_regarding_snr[snr] = accuracy
             conf_matrices[id_exp].append(conf_matrix)
-        avg_acc = np.mean(list(perf_regarding_snr.values()))
+        # avg_acc = np.mean(list(perf_regarding_snr.values()))
+        max_acc = np.max(np.array(metrics_dict["valid_accuracies"]))
         w = 0.5
         plt.bar([key+id_exp*w for key in perf_regarding_snr.keys()],
-                perf_regarding_snr.values(), width=w, label=f"Acc: {avg_acc:.1%} |" + label_name + extra)
+                perf_regarding_snr.values(), width=w, label=f"Acc: {max_acc:.1%} |" + label_name + extra)
         plt.xlabel("SNR")
         plt.ylabel("Accuracy")
     plt.title("Accuracy with regard to SNR")
