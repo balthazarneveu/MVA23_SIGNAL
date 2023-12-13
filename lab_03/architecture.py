@@ -89,11 +89,12 @@ class FlexiConv(torch.nn.Module):
         h_dim: Optional[int] = 32,
         h_classifier: Optional[int] = 512,
         n_classes: Optional[int] = N_CLASSES,
-        augmented_inputs: Optional[bool] = False
+        # augmented_inputs: Optional[bool] = False
     ):
-        self.augmented_inputs = augmented_inputs
-        if augmented_inputs:
-            dim_in += 2
+        # self.augmented_inputs = augmented_inputs
+        # if augmented_inputs:
+        #     dim_in += 2
+        
         logging.warning(
             f"FLEXICONV {dim_in=} {k_size=} {h_dim=} {h_classifier=} {n_classes=}")
         super().__init__()
@@ -140,12 +141,12 @@ class FlexiConv(torch.nn.Module):
         Returns:
             torch.Tensor: logits (not probabilities) [N, n_classes]
         """
-        if self.augmented_inputs:
-            x, y = sig_in[..., 0, ...], sig_in[..., 1, ...]
-            # [N, C=2, T] -> [N, C=4, T]
-            sig_in = torch.stack(
-                [x, y, torch.arctan2(y, x), torch.sqrt(x**2+y**2)], dim=-2)
-            assert sig_in.shape[-2] == 4, f"Wrong concatenation {sig_in.shape}"
+        # if self.augmented_inputs:
+        #     x, y = sig_in[..., 0, ...], sig_in[..., 1, ...]
+        #     # [N, C=2, T] -> [N, C=4, T]
+        #     sig_in = torch.stack(
+        #         [x, y, torch.arctan2(y, x), torch.sqrt(x**2+y**2)], dim=-2)
+        #     assert sig_in.shape[-2] == 4, f"Wrong concatenation {sig_in.shape}"
         # L=2048 -> L=1024
         x1 = self.block1(sig_in)
         # L=1024 -> L=512
