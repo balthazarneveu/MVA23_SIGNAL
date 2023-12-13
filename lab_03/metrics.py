@@ -60,7 +60,7 @@ def plot_results(metrics_dict_comparison):
     axs[0].set_title("Losses")
     axs[0].grid()
 
-    axs[1].set_xlabel("Step")
+    axs[1].set_xlabel("Epoch")
     axs[1].set_ylabel("Accuracy %")
     axs[1].legend()
     axs[1].set_title("Validation accuracy")

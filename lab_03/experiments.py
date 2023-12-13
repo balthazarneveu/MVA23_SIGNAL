@@ -228,7 +228,7 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
         hyperparams["n_epochs"] = 500
         hyperparams["lr"] = 1E-3
         hyperparams["annotation"] = "Fat Convolutional h=32, h_c=256, k=7, tpool=8"
-    elif exp == 62:  # >83.4% at 200 epochs - OVervfits at 150
+    elif exp == 62:  # >83.4% at 200 epochs - OVerfits at 150
         model = FlexiConv(h_dim=8, k_size=[9])
         hyperparams["n_epochs"] = 500
         hyperparams["lr"] = 5E-4
