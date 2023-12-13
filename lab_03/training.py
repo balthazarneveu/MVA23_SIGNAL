@@ -93,7 +93,7 @@ def train(model: torch.nn.Module,
 
 def classical_training_loop(exp_list, n_epochs=None, lr_list=[], device=DEVICE):
     for exp in exp_list:
-        from model import get_experience
+        from experiments import get_experience
         if lr_list is None or len(lr_list) == 0:
             lr_list = [None]
         for lr in lr_list:
