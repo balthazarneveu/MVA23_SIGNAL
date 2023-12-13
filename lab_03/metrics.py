@@ -9,7 +9,7 @@ import torch
 from data_loader import get_dataloaders, TRAIN, VALID, CONFIG_DATALOADER, SNR_FILTER
 from infer import infer
 num_samples = len(get_dataloaders()[TRAIN].dataset)
-
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 def plot_results(metrics_dict_comparison):
     colors = ["r"]
@@ -79,27 +79,28 @@ def snr_based_metrics(metrics_dict_comparison: dict):
 
         if batch_sizes is not None:
             normalization = num_samples/int(batch_sizes[0])
-            extra += f" N={int(batch_sizes[0])}"
+            extra += f"| batch size ={int(batch_sizes[0])}"
         else:
             normalization = 1
         lr = metrics_dict["config"].get("lr", None)
         if lr is not None:
             lr = float(lr)
-            extra += f" lr={lr:.1E}"
+            extra += f"| lr={lr:.1E}"
         lr_scheduler_name = metrics_dict["config"].get(
             "lr_scheduler_name", None)
         if lr_scheduler_name is not None:
-            extra += f" {lr_scheduler_name}"
+            extra += f"| {lr_scheduler_name}"
         for aug_type in ["rotate", "trim", "noise"]:
             augment_val = metrics_dict["config"].get(f"augment_{aug_type}", {})
             if augment_val is not None:
                 if augment_val not in ["0", "false"]:  # Fix yaml!
-                    extra += f" {aug_type}"
+                    extra += f"| {aug_type}"
+        n_epochs = int(metrics_dict["config"].get("n_epochs", 100))
+        extra += f"| {n_epochs} epochs"
         label_name = exp_name
         annotation = metrics_dict["config"].get("annotation", None)
         if annotation is not None:
             label_name = annotation
-        print(label_name)
         assert metrics_dict["config"]["model_path"].exists()
         model = torch.load(metrics_dict["config"]["model_path"])
         from copy import deepcopy
@@ -108,12 +109,12 @@ def snr_based_metrics(metrics_dict_comparison: dict):
         for snr in [0, 10, 20, 30]:
             config_data_paths[VALID][SNR_FILTER] = [snr]
             dl = get_dataloaders(config_data_paths=config_data_paths)
-            accuracy, valid_loss = infer(model, dl[VALID], device="cuda")
-            print(len(dl[VALID].dataset))
+            accuracy, valid_loss = infer(model, dl[VALID], device=device)
             perf_regarding_snr[snr] = accuracy
+        avg_acc = np.mean(list(perf_regarding_snr.values()))
         w = 0.5
         plt.bar([key+id_exp*w for key in perf_regarding_snr.keys()],
-                perf_regarding_snr.values(), width=w, label=label_name + extra)
+                perf_regarding_snr.values(), width=w, label=f"Acc: {avg_acc:.1%} |" + label_name + extra)
         plt.xlabel("SNR")
         plt.ylabel("Accuracy")
     plt.title("Accuracy with regard to SNR")
