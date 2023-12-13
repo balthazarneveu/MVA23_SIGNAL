@@ -19,7 +19,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 def train(model: torch.nn.Module,
           config_dataloader=deepcopy(CONFIG_DATALOADER),
           augment_config: Optional[dict] = {},
-          device: str = "cuda",
+          device: str = DEVICE,
           lr: float = 1E-4, n_epochs=5,
           lr_scheduler: Optional[Callable] = None,
           needed_loss_scheduler: bool = False,
@@ -71,7 +71,7 @@ def train(model: torch.nn.Module,
         elif lr_scheduler is not None:
             scheduler.step()
 
-        accuracy, valid_loss = infer(
+        accuracy, valid_loss, conf_matrix = infer(
             model, dataloaders[VALID],
             device, criterion=torch.nn.CrossEntropyLoss())
         valid_accuracies.append(accuracy)
