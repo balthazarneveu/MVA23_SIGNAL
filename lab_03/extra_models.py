@@ -1,4 +1,5 @@
 import torch.nn as nn
+from collections import namedtuple
 
 
 class ConvBlock(nn.Module):
@@ -51,3 +52,157 @@ class CNN(nn.Module):
         output = self.linear2(x)
 
         return output
+
+
+class ResNet(nn.Module):
+    def __init__(self, config, output_dim):
+        super().__init__()
+
+        block, n_blocks, channels = config
+        self.in_channels = channels[0]
+
+        assert len(n_blocks) == len(channels) == 4
+
+        self.conv1 = nn.Conv1d(2, self.in_channels,
+                               kernel_size=7, stride=2, padding=3, bias=False)
+        self.bn1 = nn.BatchNorm1d(self.in_channels)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool1d(kernel_size=3, stride=2, padding=1)
+
+        self.layer1 = self.get_resnet_layer(block, n_blocks[0], channels[0])
+        self.layer2 = self.get_resnet_layer(
+            block, n_blocks[1], channels[1], stride=2)
+        self.layer3 = self.get_resnet_layer(
+            block, n_blocks[2], channels[2], stride=2)
+        self.layer4 = self.get_resnet_layer(
+            block, n_blocks[3], channels[3], stride=2)
+
+        self.avgpool = nn.AdaptiveAvgPool1d((1,))
+        self.fc = nn.Linear(self.in_channels, output_dim)
+
+    def get_resnet_layer(self, block, n_blocks, channels, stride=1):
+
+        layers = []
+
+        if self.in_channels != block.expansion * channels:
+            downsample = True
+        else:
+            downsample = False
+
+        layers.append(block(self.in_channels, channels, stride, downsample))
+
+        for i in range(1, n_blocks):
+            layers.append(block(block.expansion * channels, channels))
+
+        self.in_channels = block.expansion * channels
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = self.avgpool(x)
+        h = x.view(x.shape[0], -1)
+        x = self.fc(h)
+
+        return x
+
+
+class Bottleneck(nn.Module):
+
+    expansion = 4
+
+    def __init__(self, in_channels, out_channels, stride=1, downsample=False):
+        super().__init__()
+
+        self.conv1 = nn.Conv1d(in_channels, out_channels, kernel_size=1,
+                               stride=1, bias=False)
+        self.bn1 = nn.BatchNorm1d(out_channels)
+
+        self.conv2 = nn.Conv1d(out_channels, out_channels, kernel_size=3,
+                               stride=stride, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm1d(out_channels)
+
+        self.conv3 = nn.Conv1d(out_channels, self.expansion * out_channels, kernel_size=1,
+                               stride=1, bias=False)
+        self.bn3 = nn.BatchNorm1d(self.expansion * out_channels)
+
+        self.relu = nn.ReLU(inplace=True)
+
+        if downsample:
+            conv = nn.Conv1d(in_channels, self.expansion * out_channels, kernel_size=1,
+                             stride=stride, bias=False)
+            bn = nn.BatchNorm1d(self.expansion * out_channels)
+            downsample = nn.Sequential(conv, bn)
+        else:
+            downsample = None
+
+        self.downsample = downsample
+
+    def forward(self, x):
+
+        i = x
+
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+
+        x = self.conv3(x)
+        x = self.bn3(x)
+
+        if self.downsample is not None:
+            i = self.downsample(i)
+
+        x += i
+        x = self.relu(x)
+
+        return x
+
+
+def get_resnet(output_dim=6):
+    ResNetConfig = namedtuple(
+        'ResNetConfig', ['block', 'n_blocks', 'channels'])
+    resnet50_config = ResNetConfig(block=Bottleneck,
+                                   n_blocks=[3, 4, 6, 3],
+                                   channels=[64, 128, 256, 512])
+    model_res = ResNet(resnet50_config, output_dim)
+    return model_res
+
+
+class StackedGRUModel(nn.Module):
+    def __init__(self, num_classes, input_size=2, hidden_size=64, num_layers=2):
+        super(StackedGRUModel, self).__init__()
+
+        self.gru = nn.GRU(input_size=input_size, hidden_size=hidden_size,
+                          num_layers=num_layers, batch_first=True)
+        self.fc1 = nn.Linear(hidden_size, 128)
+        self.batch_norm_fc = nn.BatchNorm1d(128)
+        self.fc2 = nn.Linear(128, num_classes)
+
+    def forward(self, x):
+        # Permute dimensions to match GRU input shape
+        x = x.permute(0, 2, 1)
+
+        # GRU layer
+        _, hn = self.gru(x)
+
+        # Take the hidden state from the last time step
+        x = hn[-1, :, :]
+
+        # Fully connected layers
+        x = nn.functional.relu(self.batch_norm_fc(self.fc1(x)))
+        x = self.fc2(x)
+
+        return nn.functional.log_softmax(x, dim=1)

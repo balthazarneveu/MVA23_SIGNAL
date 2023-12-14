@@ -6,6 +6,8 @@ from architecture import FlexiConv
 from model import (
     VanillaClassifier, Convolutional_baseline, RnnBaseline, Slim_Convolutional
 )
+from extra_models import CNN, get_resnet, StackedGRUModel
+
 
 
 def count_parameters(model: torch.nn.Module) -> int:
@@ -292,13 +294,49 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
         augment_config[AUGMENT_TRIM] = True
         augment_config[AUGMENT_ROTATE] = True
         augment_config[AUGMENT_NOISE] = 0.001
-    elif exp == 80:  # 83.1%
-        from extra_models import CNN
+    elif exp in [80, 81, 82, 83]:
         model = CNN()
+        # uses LazyLinear, needs to infer to count these params
+        model(torch.rand(1, 2, 2048))
+        hyperparams["annotation"] = "CNN Stack Junior Team"
+        if exp == 80:  # 83.1%
+            hyperparams["n_epochs"] = 30
+            hyperparams["lr"] = 1e-3
+            # Batch size 256
+        elif exp == 81:  # ?
+            hyperparams["n_epochs"] = 100
+            hyperparams["lr"] = 1e-3
+            hyperparams["batch_sizes"] = (512, 1024)
+        elif exp == 82:  # 85.9%
+            hyperparams["n_epochs"] = 100
+            hyperparams["lr"] = 5e-4
+            # augment_config[AUGMENT_TRIM] = True
+            augment_config[AUGMENT_ROTATE] = True
+            augment_config[AUGMENT_NOISE] = 0.001
+        elif exp == 83:  # 83.1%
+            hyperparams["n_epochs"] = 100
+            hyperparams["lr"] = 5e-4
+    elif exp in range(90, 100):
+        model = get_resnet()
+        hyperparams["annotation"] = "ResNet50 Junior Team"
+        if exp == 90: # 86.1%
+            hyperparams["batch_sizes"] = (64, 128)
+            hyperparams["n_epochs"] = 40
+            hyperparams["lr"] = 1e-3
+        elif exp == 91: # ?
+            hyperparams["batch_sizes"] = (64, 128)
+            hyperparams["n_epochs"] = 30
+            hyperparams["lr"] = 1e-3
+            augment_config[AUGMENT_ROTATE] = True
+            augment_config[AUGMENT_NOISE] = 0.001
+    elif exp == 100:
+        model = StackedGRUModel(6)
+        hyperparams["annotation"] = "Stacked GRU Lilian"
         hyperparams["n_epochs"] = 30
         hyperparams["lr"] = 1e-3
-        hyperparams["annotation"] = "CNN JTeam"
-        model(torch.rand(1, 2, 2048)) # uses LazyLinear, needs to infer to count these params
+        hyperparams["batch_sizes"] = (16, 128)
+
+
     hyperparams["param_count"] = count_parameters(model)
     print(f'param_count: {hyperparams["param_count"]}')
     return model, hyperparams, augment_config
