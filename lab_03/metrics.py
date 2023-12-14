@@ -18,9 +18,10 @@ def plot_results(metrics_dict_comparison):
     fig, axs = plt.subplots(ncols=2, figsize=(16, 8))
     for exp_name, metrics_dict in metrics_dict_comparison.items():
         extra = ""
+        prefix = ""
         params_count = metrics_dict["config"].get("param_count", None)
         if params_count is not None:
-            extra += f" {float(params_count)/1E6:.1f}M params"
+                prefix += f" {float(params_count)/1E3:.0f}k params"
         batch_sizes = metrics_dict["config"].get("batch_sizes", None)
         if batch_sizes is not None:
             normalization = num_samples/int(batch_sizes[0])
@@ -57,7 +58,7 @@ def plot_results(metrics_dict_comparison):
                     label=f"{label_name}")
         max_acc = np.max(np.array(valid_accuracies))
         axs[1].plot(epoch_steps, 100*np.array(valid_accuracies),
-                    "-", label=f"{label_name} {max_acc:.1%} {extra}")
+                    "-", label=f"{prefix} | {label_name} {max_acc:.1%} {extra}")
     axs[0].set_xlabel("Epoch")
     axs[0].set_ylabel("Loss")
     axs[0].legend()

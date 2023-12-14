@@ -52,6 +52,7 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
     elif exp == 7:
         model = Slim_Convolutional(rnn=False)  # 78.2%
         hyperparams["n_epochs"] = 1000
+        hyperparams["annotation"] = "Slim Conv h=16"
     # AUGMENTATION EXPERIMENTS
     elif exp == 8:
         model = Slim_Convolutional(rnn=False)  # ?
@@ -299,4 +300,5 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
         hyperparams["annotation"] = "CNN JTeam"
         model(torch.rand(1, 2, 2048)) # uses LazyLinear, needs to infer to count these params
     hyperparams["param_count"] = count_parameters(model)
+    print(f'param_count: {hyperparams["param_count"]}')
     return model, hyperparams, augment_config
