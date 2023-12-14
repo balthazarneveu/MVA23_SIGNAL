@@ -8,6 +8,10 @@ from model import (
 )
 
 
+def count_parameters(model: torch.nn.Module) -> int:
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
 def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
     augment_config = {
         AUGMENT_TRIM: False,
@@ -287,5 +291,12 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
         augment_config[AUGMENT_TRIM] = True
         augment_config[AUGMENT_ROTATE] = True
         augment_config[AUGMENT_NOISE] = 0.001
-
+    elif exp == 80:  # 83.1%
+        from extra_models import CNN
+        model = CNN()
+        hyperparams["n_epochs"] = 30
+        hyperparams["lr"] = 1e-3
+        hyperparams["annotation"] = "CNN JTeam"
+        model(torch.rand(1, 2, 2048)) # uses LazyLinear, needs to infer to count these params
+    hyperparams["param_count"] = count_parameters(model)
     return model, hyperparams, augment_config
