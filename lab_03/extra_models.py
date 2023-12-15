@@ -206,3 +206,46 @@ class StackedGRUModel(nn.Module):
         x = self.fc2(x)
 
         return nn.functional.log_softmax(x, dim=1)
+
+
+class PhysicienModel(nn.Module):
+    def __init__(self, num_classes, num_input_channels=2):
+        super().__init__()
+
+        # 3 couches convolutives pour l'extraction de features temporelles
+        self.conv1 = nn.Conv1d(num_input_channels, 32,
+                               kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv1d(32, 64, kernel_size=3, stride=1, padding=1)
+        self.conv3 = nn.Conv1d(64, 128, kernel_size=3, stride=1, padding=1)
+
+        # 2 couches de contraction de dimension temporelle avec différents types de pooling
+        self.pool1 = nn.AvgPool1d(kernel_size=64, stride=64, padding=0)
+        self.pool2 = nn.MaxPool1d(kernel_size=32, stride=32, padding=0)
+
+        # Couche dense pour la classification
+        self.lin1 = nn.Linear(128, num_classes)
+
+        # Couche softmax en sortie
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, x):
+
+        # Extraction de features temporelles avec des couches convolutives
+        x = nn.functional.relu(self.conv1(x))
+        x = nn.functional.relu(self.conv2(x))
+        x = nn.functional.relu(self.conv3(x))
+
+        # Contraction de dimension temporelle avec deux types de pooling successifs
+        x = self.pool1(x)
+        x = self.pool2(x)
+
+        # On redimensionne
+        x = x.view(-1, 128)
+
+        # Passage à travers la couches dense pour la classification
+        x = self.lin1(x)
+
+        # Passage à travers la couche softmax en sortie
+        x = self.softmax(x)
+
+        return x

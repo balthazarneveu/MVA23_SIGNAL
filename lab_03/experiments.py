@@ -9,7 +9,6 @@ from model import (
 from extra_models import CNN, get_resnet, StackedGRUModel
 
 
-
 def count_parameters(model: torch.nn.Module) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
@@ -319,11 +318,11 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
     elif exp in range(90, 100):
         model = get_resnet()
         hyperparams["annotation"] = "ResNet50 Junior Team"
-        if exp == 90: # 86.1%
+        if exp == 90:  # 86.1%
             hyperparams["batch_sizes"] = (64, 128)
             hyperparams["n_epochs"] = 40
             hyperparams["lr"] = 1e-3
-        elif exp == 91: # ?
+        elif exp == 91:  # ?
             hyperparams["batch_sizes"] = (64, 128)
             hyperparams["n_epochs"] = 30
             hyperparams["lr"] = 1e-3
@@ -336,7 +335,13 @@ def get_experience(exp: int) -> Tuple[torch.nn.Module, dict, dict]:
         hyperparams["lr"] = 1e-3
         hyperparams["batch_sizes"] = (16, 128)
 
-
+    elif exp == 110:
+        from extra_models import PhysicienModel
+        model = PhysicienModel(6)
+        hyperparams["lr"] = 1e-3
+        hyperparams["n_epochs"] = 30
+        hyperparams["batch_sizes"] = (16, 128)
+        hyperparams["annotation"] = "Physicien Model"
     hyperparams["param_count"] = count_parameters(model)
     print(f'param_count: {hyperparams["param_count"]}')
     return model, hyperparams, augment_config
